@@ -93,6 +93,13 @@ async function visit(page: Page, path: string): Promise<void> {
   })
   expect(overflow.amount, `${path} scrolls sideways: ${overflow.offenders.join(" | ")}`).toBeLessThanOrEqual(1)
 
+  // Entrance animations must finish: nothing may stay dimmed.
+  await page.waitForTimeout(600)
+  const dimmed = await page.evaluate(() =>
+    Array.from(document.querySelectorAll(".stagger-page > * > *, .reveal")).filter((element) => Number(getComputedStyle(element).opacity) < 1).length
+  )
+  expect(dimmed, `${path} has elements stuck mid-fade`).toBe(0)
+
   const axe = await new AxeBuilder({ page }).analyze()
   const serious = axe.violations
     .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
@@ -182,16 +189,18 @@ test("a new person is refused a bad code, then redeems a real one and lands in t
   ])
 
   await page.goto("/login?step=invitation")
+  await page.locator('input[name="username"]').fill(`user_${randomUUID().slice(0, 8)}`)
   await page.locator('input[name="code"]').fill("ZABER-0000-0000")
   await page.locator("form", { has: page.locator('input[name="code"]') }).locator('button[type="submit"]').click()
   await expect(page.getByText(/invitation code is not valid/i).first()).toBeVisible()
 
+  await page.locator('input[name="username"]').fill(`user_${randomUUID().slice(0, 8)}`)
   await page.locator('input[name="code"]').fill(code)
   await page.locator("form", { has: page.locator('input[name="code"]') }).locator('button[type="submit"]').click()
   await expect(page).toHaveURL(/\/overview/)
   await expect(page.locator("h1").first()).toBeVisible()
-  const { rows } = await db.query("select role, status from users where email = $1", [email])
-  expect(rows).toEqual([{ role: "user", status: "active" }])
+  const { rows } = await db.query("select role, status, username is not null as named from users where email = $1", [email])
+  expect(rows).toEqual([{ role: "user", status: "active", named: true }])
 })
 
 test("a revoked code is refused with the same message", async ({ page, context, baseURL }) => {
@@ -201,9 +210,34 @@ test("a revoked code is refused with the same message", async ({ page, context, 
     { name: "__Host-sz_pending", value: pendingCookie(`rev-${randomUUID().slice(0, 8)}@example.com`), url: (baseURL as string).replace("http:", "https:"), secure: true, httpOnly: true, sameSite: "Lax" },
   ])
   await page.goto("/login?step=invitation")
+  await page.locator('input[name="username"]').fill(`user_${randomUUID().slice(0, 8)}`)
   await page.locator('input[name="code"]').fill(code)
   await page.locator("form", { has: page.locator('input[name="code"]') }).locator('button[type="submit"]').click()
   await expect(page.getByText(/invitation code is not valid/i).first()).toBeVisible()
+})
+
+test("inviting needs the owner's permission, and the switch grants it", async ({ page }) => {
+  const person = await seed(db, "user", "inviter")
+  await signIn(page, person)
+  await page.goto("/invites")
+  await expect(page.getByText("You can't create invitation codes")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Create invitation code" })).toHaveCount(0)
+
+  await page.context().clearCookies()
+  await signIn(page, owner)
+  await page.goto(`/admin/users/${person.id}`)
+  await page.getByText("Can create invitation codes").click()
+  await expect.poll(async () => (await db.query("select can_invite from users where id = $1", [person.id])).rows[0].can_invite).toBe(true)
+
+  await page.context().clearCookies()
+  await signIn(page, person)
+  await page.goto("/invites")
+  await page.getByRole("button", { name: "Create invitation code" }).click()
+  await expect(page.getByLabel("Invitation code (shown once)")).toHaveValue(/^ZABER-/)
+  const { rows } = await db.query("select max_uses, expires_at from invitations where created_by = $1", [person.id])
+  expect(rows).toHaveLength(1)
+  expect(rows[0].max_uses).toBe(1)
+  expect(rows[0].expires_at).not.toBeNull()
 })
 
 test("a disabled person is out on their next request", async ({ page }) => {

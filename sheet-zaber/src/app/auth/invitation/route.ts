@@ -29,7 +29,7 @@ function nonEmpty(value: unknown): string | null {
 }
 
 /** The body is read once, from either shape, and only ever as text. */
-async function readSubmittedBody(req: Request): Promise<{ code: string | null; returnTo: string | null }> {
+async function readSubmittedBody(req: Request): Promise<{ code: string | null; returnTo: string | null; username: string | null }> {
   let field: (name: string) => unknown = () => null
   try {
     // Only real form encodings go to formData(): a JSON string body sent by fetch without a header
@@ -47,12 +47,12 @@ async function readSubmittedBody(req: Request): Promise<{ code: string | null; r
       field = (name: string) => form.get(name)
     }
   } catch {
-    return { code: null, returnTo: null }
+    return { code: null, returnTo: null, username: null }
   }
 
   let code: string | null = null
   for (const name of CODE_FIELDS) code ??= nonEmpty(field(name))
-  return { code, returnTo: nonEmpty(field("returnTo")) }
+  return { code, returnTo: nonEmpty(field("returnTo")), username: nonEmpty(field("username")) }
 }
 
 /** Relative-path-only: a caller-supplied absolute URL would turn this redirect into an open one. */
@@ -101,7 +101,7 @@ export async function POST(req: Request): Promise<Response> {
     )
   }
 
-  const result = await redeemInvitation({ plaintextCode: submitted.code, pending, ip: clientBucketIp(req) })
+  const result = await redeemInvitation({ plaintextCode: submitted.code, pending, ip: clientBucketIp(req), username: submitted.username })
   if (isActionError(result)) {
     return errorResponse(result, { clearPending: result.error.code === "pending_expired" })
   }

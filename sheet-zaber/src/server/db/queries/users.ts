@@ -29,7 +29,7 @@ export async function findUserById(id: string, q?: DbLike | DbTx): Promise<UserR
 }
 
 export async function createUser(
-  input: { googleSub: string; email: string; role: UserRole; invitationId?: string | null },
+  input: { googleSub: string; email: string; role: UserRole; invitationId?: string | null; username?: string | null },
   q?: DbLike | DbTx
 ): Promise<UserRow> {
   const [row] = await client(q)
@@ -40,6 +40,7 @@ export async function createUser(
       email: input.email,
       role: input.role,
       invitationId: input.invitationId ?? null,
+      username: input.username ?? null,
     })
     .returning()
   return row

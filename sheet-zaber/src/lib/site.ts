@@ -7,7 +7,7 @@ export const SITE_DESCRIPTION =
 
 /** The dashboard and every handshake route. Kept out of search by robots.ts and page metadata. */
 export const PRIVATE_PATHS = [
-  "/overview", "/spreadsheets", "/apis", "/keys", "/playground", "/logs", "/analytics", "/settings", "/admin", "/login", "/auth/", "/api/",
+  "/overview", "/spreadsheets", "/apis", "/keys", "/playground", "/logs", "/analytics", "/settings", "/invites", "/admin", "/login", "/auth/", "/api/",
 ]
 
 export const PUBLIC_PATHS = [

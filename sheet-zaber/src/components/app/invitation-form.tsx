@@ -22,6 +22,7 @@ type FieldState = {
   message?: string
   code?: string
   fieldError?: string
+  usernameError?: string
   retryAfter?: string
 }
 
@@ -32,7 +33,9 @@ export function InvitationForm() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     const form = event.currentTarget
-    const code = new FormData(form).get("code")
+    const data = new FormData(form)
+    const code = data.get("code")
+    const username = data.get("username")
 
     if (typeof fetch !== "function") return // no JS: the browser posts and follows the 303
 
@@ -43,7 +46,7 @@ export function InvitationForm() {
       const response = await fetch("/auth/invitation", {
         method: "POST",
         headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify({ code: typeof code === "string" ? code : "" }),
+        body: JSON.stringify({ code: typeof code === "string" ? code : "", username: typeof username === "string" ? username : "" }),
       })
 
       const body: unknown = await response.json().catch(() => null)
@@ -71,6 +74,7 @@ export function InvitationForm() {
             ? error.message
             : `The invitation step failed (HTTP ${response.status}). Try again.`,
         fieldError: typeof fields?.code === "string" ? fields.code : undefined,
+        usernameError: typeof fields?.username === "string" ? fields.username : undefined,
         retryAfter:
           typeof fields?.retry_after === "string" ? fields.retry_after : undefined,
       })
@@ -88,13 +92,27 @@ export function InvitationForm() {
   return (
     <form action="/auth/invitation" method="post" onSubmit={submit} className="flex flex-col gap-4">
       <TextField
+        label="Username"
+        name="username"
+        required
+        minLength={3}
+        maxLength={30}
+        pattern="[A-Za-z0-9_]+"
+        autoComplete="username"
+        spellCheck={false}
+        placeholder="your_name"
+        hint="3 to 30 letters, numbers or underscores."
+        error={state.usernameError}
+        disabled={state.status === "pending"}
+      />
+      <TextField
         label="Invitation code"
         name="code"
         required
         autoComplete="one-time-code"
         spellCheck={false}
         placeholder="ZABER-XXXX-XXXX"
-        hint="Issued by the owner of this Sheet Zaber instance. Codes are case-insensitive."
+        hint="Given to you by someone with permission to invite. Codes are case-insensitive."
         error={state.fieldError}
         disabled={state.status === "pending"}
         className="font-mono"

@@ -23,6 +23,7 @@ export type AuditAction =
   | "user.demote"
   | "user.delete"
   | "user.limit"
+  | "user.invite_permission"
   | "invitation.create"
   | "invitation.revoke"
   | "invitation.redeem"

@@ -11,6 +11,7 @@ export type Action =
   | "user.demote"
   | "user.delete"
   | "user.limit"
+  | "user.invite_permission"
   | "invitation.create"
   | "invitation.revoke"
   | "settings.platform.update"
@@ -38,6 +39,8 @@ const TABLE: Record<Action, readonly SessionRole[]> = {
   // `users.api_limit_per_day`: the owner allocates each user's daily API quota (§1.4). Owner-only
   // like its siblings — a `user` row must never be able to raise itself out of a 429.
   "user.limit": ["owner"],
+  // A member may also create codes when `users.can_invite` is set; the invitation service checks it.
+  "user.invite_permission": ["owner"],
   "invitation.create": ["owner"],
   "invitation.revoke": ["owner"],
   "settings.platform.update": ["owner"],

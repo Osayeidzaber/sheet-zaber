@@ -32,8 +32,18 @@ const OWNER_ITEMS: readonly NavItem[] = [
   { index: "A1", href: "/admin", label: "Admin", hint: "Users and invitations" },
 ]
 
-export function navItemsFor(role: NavLinkRole): NavItem[] {
-  return role === "owner" ? [...USER_ITEMS, ...OWNER_ITEMS] : [...USER_ITEMS]
+const GROUPS = [
+  { label: "Workspace", hrefs: ["/overview"] },
+  { label: "Publish", hrefs: ["/spreadsheets", "/apis", "/keys"] },
+  { label: "Observe", hrefs: ["/playground", "/logs", "/analytics"] },
+  { label: "Account", hrefs: ["/settings", "/invites", "/admin"] },
+]
+
+const INVITE_ITEM: NavItem = { index: "09", href: "/invites", label: "Invites", hint: "Create invitation codes" }
+
+export function navItemsFor(role: NavLinkRole, canInvite = false): NavItem[] {
+  if (role === "owner") return [...USER_ITEMS, ...OWNER_ITEMS]
+  return canInvite ? [...USER_ITEMS, INVITE_ITEM] : [...USER_ITEMS]
 }
 
 /** Exact match or a nested route below it (`/apis/xyz` still highlights Endpoints). */
@@ -43,30 +53,38 @@ function isCurrent(pathname: string, href: string): boolean {
 
 export function Nav({
   role,
+  canInvite = false,
   onNavigate,
   className,
 }: {
   role: NavLinkRole
+  canInvite?: boolean
   onNavigate?: () => void
   className?: string
 }) {
   const pathname = usePathname()
-  const items = navItemsFor(role)
+  const items = navItemsFor(role, canInvite)
 
   return (
     <nav aria-label="Sheet Zaber" className={cn("flex min-w-0 flex-col gap-1", className)}>
-      <p className="folio px-3 pb-1">Workspace</p>
+      {GROUPS.map((group) => {
+        const members = items.filter((item) => group.hrefs.includes(item.href))
+        if (members.length === 0) return null
+        return (
+          <div key={group.label} className="pb-3">
+      <p className="folio px-3 pb-2 group-data-[collapsed=true]/side:sr-only">{group.label}</p>
       <ul className="flex flex-col gap-1">
-        {items.map((item) => {
+        {members.map((item) => {
           const active = isCurrent(pathname, item.href)
           return (
             <li key={item.href}>
               <Link
                 href={item.href}
                 onClick={onNavigate}
+                title={item.label}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-11 w-full items-center justify-between gap-3 rounded-full px-4 text-[14px] font-medium transition-colors duration-(--dur-fast)",
+                  "flex min-h-11 w-full items-center justify-between gap-3 rounded-full px-4 text-[14px] whitespace-nowrap font-medium transition-colors duration-(--dur-fast)",
                   active ? "bg-paper text-ink hover:bg-press hover:text-ink" : "text-mist hover:bg-lift hover:text-paper"
                 )}
               >
@@ -74,10 +92,10 @@ export function Nav({
                   <span aria-hidden="true" className={cn("font-mono text-[10px] tracking-[0.14em] num", active ? "text-ink" : "text-dust")}>
                     {item.index}
                   </span>
-                  <span className="min-w-0 truncate">{item.label}</span>
+                  <span className="min-w-0 truncate group-data-[collapsed=true]/side:sr-only">{item.label}</span>
                 </span>
                 {active ? (
-                  <span aria-hidden="true" className="font-mono text-[10px] tracking-[0.14em]">
+                  <span aria-hidden="true" className="font-mono text-[10px] tracking-[0.14em] group-data-[collapsed=true]/side:hidden">
                     NOW
                   </span>
                 ) : null}
@@ -86,6 +104,9 @@ export function Nav({
           )
         })}
       </ul>
+          </div>
+        )
+      })}
     </nav>
   )
 }

@@ -2,14 +2,17 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
-import { Badge, StatusDot } from "@/components/ui/badge"
+import { InviteSwitch } from "./invite-switch"
+import { Badge, isHttpMethod, MethodTag, StatusCode, StatusDot } from "@/components/ui/badge"
 import { PageHeader, Panel, PanelBody, PanelHeader } from "@/components/ui/panel"
 import { EmptyState, ErrorState } from "@/components/ui/state"
 import { MonoCell, Table, TableScroll, Td, Th, Tr } from "@/components/ui/table"
 import { isActionError } from "@/lib/action-result"
-import { formatDateTime, formatNumber } from "@/lib/format"
+import { formatDateTime, formatDuration, formatNumber } from "@/lib/format"
 import { getUserDetail, listAdminUserKeys } from "@/server/admin/user-detail"
 import { requireOwner } from "@/server/auth/guards"
+import { listRequestLogs } from "@/server/db/queries/logs"
+import { findUserById } from "@/server/db/queries/users"
 
 export const metadata: Metadata = {
   title: "Admin · User",
@@ -58,6 +61,10 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
 
   const user = detail.data
   const now = new Date()
+  const [account, activity] = await Promise.all([
+    findUserById(user.id),
+    listRequestLogs({ userId: user.id, page: 1, perPage: 20 }),
+  ])
   // Owners and a stored 0 skip the daily window (`engine/ratelimit.ts`), so neither has a number to show.
   const limit =
     user.role === "owner" || user.apiLimitPerDay === 0 ? "Unlimited" : `${formatNumber(user.apiLimitPerDay)} a day`
@@ -67,7 +74,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
       <PageHeader
         folio="A2 — Admin · Users"
         title={user.email}
-        description="Change the role, status or daily limit from the users table."
+        description={`${account?.username ? `@${account.username}. ` : ""}Change the role, status or daily limit from the users table.`}
         action={
           <>
             <Badge variant={user.role === "owner" ? "inverted" : "neutral"}>
@@ -95,6 +102,60 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
             <Fact label="Joined" value={day(user.createdAt)} />
           </dl>
         </PanelBody>
+      </Panel>
+
+      <Panel as="section">
+        <PanelHeader title="Permissions" />
+        <PanelBody>
+          {user.role === "owner" ? (
+            <p className="text-[14px] text-mist">Owners can always create invitation codes.</p>
+          ) : (
+            <InviteSwitch userId={user.id} initial={account?.canInvite === true} />
+          )}
+        </PanelBody>
+      </Panel>
+
+      <Panel as="section">
+        <PanelHeader
+          title="Recent activity"
+          description={`Latest API requests, ${formatNumber(activity.total)} in total. Logs never hold cell contents.`}
+        />
+        {activity.rows.length === 0 ? (
+          <PanelBody>
+            <EmptyState title="No requests yet" body="This account has not called its API." />
+          </PanelBody>
+        ) : (
+          <TableScroll label="Recent requests by this account">
+            <Table>
+              <thead>
+                <tr>
+                  <Th>When</Th>
+                  <Th>Method</Th>
+                  <Th>Endpoint</Th>
+                  <Th>Path</Th>
+                  <Th align="right">Status</Th>
+                  <Th align="right">Took</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {activity.rows.map((row) => (
+                  <Tr key={row.id}>
+                    <Td className="whitespace-nowrap text-dust">{formatDateTime(row.createdAt.toISOString())}</Td>
+                    <Td>{isHttpMethod(row.method) ? <MethodTag method={row.method} /> : row.method}</Td>
+                    <Td>{row.apiName ?? "Unknown endpoint"}</Td>
+                    <Td>
+                      <MonoCell value={row.path} />
+                    </Td>
+                    <Td align="right">
+                      <StatusCode code={row.statusCode} />
+                    </Td>
+                    <Td numeric>{formatDuration(row.durationMs)}</Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </Table>
+          </TableScroll>
+        )}
       </Panel>
 
       <Panel as="section">

@@ -15,6 +15,7 @@ const LABELS: Record<string, string> = {
   admin: "Admin",
   users: "Users",
   invitations: "Invitations",
+  invites: "Invites",
   new: "New",
   edit: "Edit",
 }

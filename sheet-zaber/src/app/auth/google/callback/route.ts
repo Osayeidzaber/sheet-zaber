@@ -6,6 +6,7 @@
  * other than the encrypted `sz_pending`.
  */
 import { readUser } from "@/server/auth/guards"
+import { bootstrapOwner } from "@/server/auth/owner-bootstrap"
 import { buildPendingSetHeaders, pendingExpiry, signPending } from "@/server/auth/pending"
 import {
   OAUTH_STATE_COOKIE,
@@ -81,11 +82,14 @@ async function handleCallback(request: Request): Promise<Response> {
     return redirectWithCookies(request.url, "/login?error=email_unverified", ...clearState)
   }
 
-  const existing = await findUserByGoogleSub(claims.sub)
+  let existing = await findUserByGoogleSub(claims.sub)
 
   if (state.link) {
     return handleLink(request, state, claims, exchange, existing?.id)
   }
+
+  // Past the verified-email check above, so only Google's word for this address can reach it.
+  existing ??= (await bootstrapOwner({ sub: claims.sub, email: claims.email })) ?? undefined
 
   if (!existing) {
     // Invitation-only: the identity (and its encrypted refresh token) waits in sz_pending

@@ -47,6 +47,7 @@ const GATED_PREFIXES = [
   "/logs",
   "/analytics",
   "/settings",
+  "/invites",
   "/admin",
 ] as const
 
@@ -105,6 +106,8 @@ export const config = {
     "/analytics",
     "/analytics/:path*",
     "/settings",
+    "/invites",
+    "/invites/:path*",
     "/settings/:path*",
     "/admin",
     "/admin/:path*",

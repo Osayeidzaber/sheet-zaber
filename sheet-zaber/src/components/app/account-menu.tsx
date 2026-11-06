@@ -35,11 +35,11 @@ export function AccountMenu({
         >
           {user.email.slice(0, 1).toUpperCase()}
         </span>
-        <span className="min-w-0 flex-1">
+        <span className="min-w-0 flex-1 group-data-[collapsed=true]/side:sr-only">
           <span className="block truncate text-[13px] text-paper">{user.email}</span>
           <span className="folio block">{user.role === "owner" ? "Owner" : "Member"}</span>
         </span>
-        <span aria-hidden="true" className="font-mono text-[11px] text-dust group-open:text-paper">
+        <span aria-hidden="true" className="font-mono text-[11px] text-dust group-open:text-paper group-data-[collapsed=true]/side:hidden">
           ▾
         </span>
       </summary>

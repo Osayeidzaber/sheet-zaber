@@ -10,7 +10,7 @@ import { useRef } from "react"
 
 import { Nav, type NavLinkRole } from "./nav"
 
-export function MobileNav({ role }: { role: NavLinkRole }) {
+export function MobileNav({ role, canInvite }: { role: NavLinkRole; canInvite?: boolean }) {
   const sheet = useRef<HTMLDialogElement>(null)
 
   return (
@@ -45,7 +45,7 @@ export function MobileNav({ role }: { role: NavLinkRole }) {
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
-          <Nav role={role} onNavigate={() => sheet.current?.close()} />
+          <Nav role={role} canInvite={canInvite} onNavigate={() => sheet.current?.close()} />
         </div>
       </dialog>
     </>

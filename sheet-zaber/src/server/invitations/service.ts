@@ -1,5 +1,8 @@
 import "server-only"
 
+import { eq } from "drizzle-orm"
+import { users as usersTable } from "@/server/db/schema"
+
 import { z } from "zod"
 
 import { fail, internalError, ok, isActionError, type ActionError, type ActionResult, type ErrorCategory } from "@/lib/action-result"
@@ -108,6 +111,8 @@ export type RedeemInput = {
   plaintextCode: string
   pending: PendingIdentity | null
   ip: string | null
+  /** Chosen on the invitation form; validated and stored lowercase. */
+  username?: string | null
 }
 
 export type CreateInvitationsPayload = {
@@ -194,14 +199,17 @@ function isUserUniqueViolation(error: unknown): boolean {
  * making THIS request), otherwise the DB row behind `actorId` (scripts, tests). Either way the
  * role is read from the database and decided by `can()` — never from a cookie payload.
  */
-async function activeActor(actorId: string, req?: Request): Promise<{ id: string; role: SessionRole } | null> {
+async function activeActor(
+  actorId: string,
+  req?: Request
+): Promise<{ id: string; role: SessionRole; canInvite?: boolean } | null> {
   if (req) {
     const owner = await readOwner(req)
     return owner && owner.id === actorId ? { id: owner.id, role: owner.role } : null
   }
   const row = await findUserRow(actorId)
   if (!row || row.status !== "active") return null
-  return { id: row.id, role: row.role === "owner" ? "owner" : "user" }
+  return { id: row.id, role: row.role === "owner" ? "owner" : "user", canInvite: row.canInvite === true }
 }
 
 function allowed(actor: { role: SessionRole } | null, action: Action): boolean {
@@ -227,7 +235,7 @@ export async function createInvitations(
 
   try {
     const actor = await activeActor(actorId, opts?.req)
-    if (!allowed(actor, "invitation.create")) {
+    if (!allowed(actor, "invitation.create") && actor?.canInvite !== true) {
       // A refused owner-only attempt is evidence, not silence (`authentication-flow.md` §3).
       await recordAudit({
         actorId: actor?.id ?? null,
@@ -400,8 +408,29 @@ export async function redeemInvitation(
   if (!normalized.success) return invalidInvitationError()
   const codeHash = sha256(normalized.data)
 
+  const username = input.username?.trim().toLowerCase() || null
+  if (username !== null && !/^[a-z0-9_]{3,30}$/.test(username)) {
+    return fail("validation_failed", "That username can't be used.", "validation", {
+      username: "Use 3 to 30 letters, numbers or underscores.",
+    })
+  }
+
   try {
     const result = await deps.transaction(async (tx) => {
+      // Before the redeem, so a taken name does not spend the code.
+      if (username !== null) {
+        const [taken] = await tx
+          .select({ id: usersTable.id })
+          .from(usersTable)
+          .where(eq(usersTable.username, username))
+          .limit(1)
+        if (taken) {
+          return fail("username_taken", "That username is taken.", "validation", {
+            username: "That username is taken. Try another.",
+          })
+        }
+      }
+
       const invitationId = await deps.redeemRow(codeHash, tx)
       if (invitationId === null) return invalidInvitationError()
 
@@ -413,7 +442,7 @@ export async function redeemInvitation(
       let created: UserRow
       try {
         created = await deps.createUser(
-          { googleSub: pending.sub, email: pending.email, role, invitationId },
+          { googleSub: pending.sub, email: pending.email, role, invitationId, username },
           tx
         )
       } catch (error) {
@@ -422,7 +451,7 @@ export async function redeemInvitation(
       }
 
       await deps.upsertUserProfile(
-        { userId: created.id, displayName: pending.name ?? pending.email, pictureUrl: pending.picture },
+        { userId: created.id, displayName: username ?? pending.name ?? pending.email, pictureUrl: pending.picture },
         tx
       )
       // `pending.refreshToken` is PLAINTEXT: `verifyPending` decrypts the cookie payload, and the

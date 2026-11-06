@@ -36,6 +36,10 @@ export const users = pgTable(
     // Per-user daily API quota, counted over EVERY API and key the user owns (`api_configurations
     // .user_id`). `0` means unlimited; a `role = 'owner'` row is unlimited whatever this holds.
     apiLimitPerDay: integer("api_limit_per_day").notNull().default(500),
+    // Chosen at registration, stored lowercase. NULL for accounts created before it, and the owner.
+    username: text("username"),
+    // Owner-granted permission to create invitation codes.
+    canInvite: boolean("can_invite").notNull().default(false),
     // How they got in (owner: NULL). Lazy reference: invitations is defined below
     // (users ↔ invitations is the schema's one FK cycle).
     invitationId: text("invitation_id").references((): AnyPgColumn => invitations.id),
@@ -46,6 +50,7 @@ export const users = pgTable(
   (t) => [
     index("users_status_idx").on(t.status),
     // Duplicate-registration guard (database-schema.md §invitation_redemptions).
+    uniqueIndex("users_username_idx").on(t.username),
     uniqueIndex("users_email_not_deleted_idx").on(t.email).where(sql`status <> 'deleted'`),
     check("users_role_check", sql`role in ('user', 'owner')`),
     check("users_status_check", sql`status in ('active', 'disabled')`),

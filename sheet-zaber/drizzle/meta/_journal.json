@@ -36,6 +36,13 @@
       "when": 1793969925903,
       "tag": "0004_api_exposed_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793972956771,
+      "tag": "0005_user_username_can_invite",
+      "breakpoints": true
     }
   ]
 }

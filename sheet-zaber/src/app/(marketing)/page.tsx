@@ -13,6 +13,7 @@ import { Noise } from "@/components/fx/noise"
 import { Faq, type FaqItem } from "@/components/marketing/faq"
 import { NumberedSteps, SectionIntro } from "@/components/marketing/landing-section"
 import { Ribbon } from "@/components/marketing/ribbon"
+import { Testimonials } from "@/components/marketing/testimonials"
 import { TabToEndpoint } from "@/components/marketing/tab-to-endpoint"
 import { Rings, TitleAside } from "@/components/ui/chapter"
 import { Panel, PanelHeader } from "@/components/ui/panel"
@@ -535,9 +536,16 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section aria-labelledby="voices-title" className="border-b border-rule">
+        <div className="gutter w-full py-[clamp(56px,8vw,96px)]">
+          <SectionIntro folio="06 — Stores" title="Stores" titleAside="using it" titleId="voices-title" />
+          <Testimonials />
+        </div>
+      </section>
+
       <section aria-labelledby="faq-title" className="border-b border-rule">
         <div className="gutter w-full py-[clamp(56px,8vw,96px)]">
-          <SectionIntro folio="06 — Questions" title="Asked," titleAside="and answered" titleId="faq-title" />
+          <SectionIntro folio="07 — Questions" title="Asked," titleAside="and answered" titleId="faq-title" />
           <Faq items={FAQ} />
         </div>
       </section>
@@ -547,7 +555,7 @@ export default function LandingPage() {
       <section aria-labelledby="closing-title">
         <div className="gutter flex w-full flex-wrap items-end justify-between gap-x-10 gap-y-8 py-[clamp(48px,7vw,88px)]">
           <div className="min-w-0">
-            <p className="folio">07 — Where to read further</p>
+            <p className="folio">08 — Where to read further</p>
             <h2
               id="closing-title"
               className="display mt-4 max-w-[16ch] text-[clamp(38px,7vw,104px)] text-paper"
@@ -557,9 +565,8 @@ export default function LandingPage() {
             <p className="mt-5 max-w-[62ch] text-[15px] leading-[1.7] text-mist">
               One published contract is the source of truth
               for every verb, error code and default on this page; the docs site renders its
-              examples from the same builders as the playground. There are no case studies or
-              customer logos here because the platform is private and its request logs are nobody&#39;s
-              marketing material.
+              examples from the same builders as the playground. The platform is private, and its
+              request logs are nobody&#39;s marketing material.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">

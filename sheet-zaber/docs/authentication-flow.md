@@ -106,4 +106,6 @@ privilege-escalation try is evidence, not silence.
 
 Owner initialization is deliberately narrow: `OWNER_EMAIL` grants `role='owner'` **at INSERT time
 only**, and `scripts/seed-owner.ts` merely promotes an already-signed-in user with that email
-(idempotent, no rows created, no demo data).
+(idempotent, no rows created, no demo data). On an instance with no owner row, the first Google-verified
+sign-in with that email creates the owner without a code (`server/auth/owner-bootstrap.ts`), because a code
+needs an existing creator. Once any owner row exists, that path is closed.

@@ -16,7 +16,7 @@ import { navItemsFor, type NavLinkRole } from "./nav"
 
 type Command = { href: string; label: string; group: string; hint: string }
 
-export function CommandPalette({ role }: { role: NavLinkRole }) {
+export function CommandPalette({ role, canInvite }: { role: NavLinkRole; canInvite?: boolean }) {
   const router = useRouter()
   const sheet = useRef<HTMLDialogElement>(null)
   const [open, setOpen] = useState(false)
@@ -25,10 +25,10 @@ export function CommandPalette({ role }: { role: NavLinkRole }) {
 
   const commands = useMemo<Command[]>(
     () => [
-      ...navItemsFor(role).map((item) => ({ href: item.href, label: item.label, group: "Workspace", hint: item.hint })),
+      ...navItemsFor(role, canInvite).map((item) => ({ href: item.href, label: item.label, group: "Workspace", hint: item.hint })),
       ...DOCS_NAV.map((item) => ({ href: item.href, label: item.label, group: "Docs", hint: item.blurb })),
     ],
-    [role]
+    [role, canInvite]
   )
 
   const needle = query.trim().toLowerCase()

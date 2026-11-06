@@ -1,8 +1,10 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import { InvitationForm } from "@/components/app/invitation-form"
-import { Wordmark } from "@/components/marketing/marketing-header"
+import { ShinyText } from "@/components/fx/shiny-text"
+import { OzMark } from "@/components/marketing/marketing-header"
 import { PillLink } from "@/components/ui/button"
 import { Folio, Rings, TitleAside } from "@/components/ui/chapter"
 import { ErrorState } from "@/components/ui/state"
@@ -81,7 +83,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <Rings at={["30%", "60%"]} className="-z-10" />
 
       <header className="gutter flex flex-col justify-between gap-12 py-8 lg:border-r lg:border-rule">
-        <Wordmark href="/" />
+        <Link href="/" aria-label="Sheet Zaber, home" className="hero-fade flex w-fit flex-col gap-4">
+          <OzMark height={72} />
+          <ShinyText trigger="loop" speed={3} className="folio folio-strong" color="var(--mist)" shineColor="var(--press)">
+            Sheet Zaber
+          </ShinyText>
+        </Link>
         <div className="flex flex-col gap-6">
           <Folio aside="Invitation only">00 — The door</Folio>
           <h1 className="display text-[clamp(64px,11vw,176px)] text-paper">
@@ -94,10 +101,19 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               </span>
             </span>
           </h1>
+          <ShinyText
+            trigger="loop"
+            speed={4}
+            delay={1}
+            className="aside block text-[clamp(22px,2.6vw,34px)] leading-[1.2]"
+            color="var(--mist)"
+            shineColor="var(--press)"
+          >
+            Your Google Sheet, as a private API.
+          </ShinyText>
           <p className="max-w-[46ch] text-[15px] leading-[1.6] text-mist">
             Private, invitation-only Google Sheets API platform. There is no sign-up here:
-            you sign in with Google, and a code issued by the instance owner completes the
-            registration.
+            you sign in with Google, and an invitation code completes the registration.
           </p>
         </div>
       </header>
@@ -118,7 +134,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         {env.googleOAuthConfigured ? (
           <div className="flex flex-col gap-3">
-            <PillLink href="/auth/google" variant="solid" size="lg" className="w-full">
+            <PillLink href="/auth/google" prefetch={false} variant="solid" size="lg" className="w-full">
               Sign in with Google
             </PillLink>
             <p className="text-center text-[13px] text-dust">
@@ -158,6 +174,21 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         )}
 
         <footer className="text-center">
+          <ol className="mb-6 grid gap-px border-y border-rule bg-rule text-left">
+            {[
+              ["01", "Sign in with Google", "Sheet Zaber never sees your password."],
+              ["02", "Pick a username", "New here? Enter it with your invitation code."],
+              ["03", "Publish a tab", "Choose the columns, then call your endpoint."],
+            ].map(([index, title, body]) => (
+              <li key={index} className="flex gap-4 bg-ink py-3">
+                <span className="folio num pt-0.5">{index}</span>
+                <span>
+                  <span className="block text-[14px] font-semibold">{title}</span>
+                  <span className="block text-[13px] text-dust">{body}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
           <p className="folio">Invitation-only · Google sign-in · No passwords stored</p>
         </footer>
       </div>
