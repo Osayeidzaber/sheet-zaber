@@ -1,0 +1,94 @@
+/* Structure + motion for the vendored Magic UI marquee (marquee.tsx). The two @keyframes
+   below are the registry's shipped CSS, moved verbatim; the registry's theme shortcuts
+   `animate-marquee` / `animate-marquee-vertical` (`marquee var(--duration) infinite linear`)
+   exist here as plain classes because this app's Tailwind theme defines no animation slots.
+   The Fade mask stops are #000 with full alpha — a mask alpha channel, not a displayed hue. */
+
+.fx-marquee {
+  position: relative;
+  display: flex;
+  gap: var(--gap, 1rem);
+  overflow: hidden;
+  padding: 0.5rem;
+  --gap: 1rem;
+  --duration: 40s;
+}
+
+.fx-marquee--horizontal {
+  flex-direction: row;
+}
+
+.fx-marquee--vertical {
+  flex-direction: column;
+}
+
+.fx-marquee__track {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: space-around;
+  gap: var(--gap, 1rem);
+}
+
+.fx-marquee--horizontal .fx-marquee__track {
+  flex-direction: row;
+  animation: marquee var(--duration) linear infinite;
+}
+
+.fx-marquee--vertical .fx-marquee__track {
+  flex-direction: column;
+  animation: marquee-vertical var(--duration) linear infinite;
+}
+
+.fx-marquee__track--reverse {
+  animation-direction: reverse;
+}
+
+/* Duplicated scroll copies sit off-screen half the cycle; they must never take clicks. */
+.fx-marquee__track--clone {
+  pointer-events: none;
+}
+
+/* Source used `group-hover:[animation-play-state:paused]`; this app's gate (hover-capable
+   pointers only, via useMediaQuery) is applied by the component before adding the class. */
+.fx-marquee--pause:hover .fx-marquee__track {
+  animation-play-state: paused;
+}
+
+.fx-marquee--fade-h {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 20%, #000 80%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 20%, #000 80%, transparent);
+}
+
+.fx-marquee--fade-v {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 20%, #000 80%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 20%, #000 80%, transparent);
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-marquee,
+  .fx-marquee__track,
+  .fx-marquee__track--reverse {
+    /* The strip stops scrolling entirely; the first copy rests in normal flow, fully
+       readable, and the fade mask (if requested) still applies as a static treatment. */
+    animation: none;
+    transition: none;
+  }
+}

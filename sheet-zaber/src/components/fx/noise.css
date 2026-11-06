@@ -1,0 +1,105 @@
+/*
+ * Grain map + motion for src/components/fx/noise.tsx
+ * Adapted from React Bits "Noise" (https://reactbits.dev/r/Noise-TS-TW.json).
+ *
+ * The source paints its tile at runtime with a canvas + `toBlob()` and drives the animation
+ * from a requestAnimationFrame loop. Both are replaced here: the tile is a static, monochrome
+ * SVG `feTurbulence` data URI (desaturated, alpha forced opaque so it behaves like the
+ * source's opaque grey tile) and every animation is a CSS keyframe on transform/opacity only.
+ * Everything stays on the grain plate itself, because an extra wrapper around a
+ * `mix-blend-mode` element would add a stacking context and change how the grain blends with
+ * the page behind it. Nothing runs while the layer is static, which is the default.
+ */
+
+/* The grain plate. Oversized by the jitter travel so a translate never exposes an edge; the
+   root's `overflow-hidden` does the clipping. */
+.fx-noise-grain {
+  position: absolute;
+  inset: -8px;
+  opacity: var(--fx-noise-opacity, 0.05);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256' viewBox='0 0 256 256'%3E%3Cfilter id='z' x='0' y='0' width='100%25' height='100%25' filterUnits='objectBoundingBox'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' seed='1013904223' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23z)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: var(--fx-noise-tile, 256px) var(--fx-noise-tile, 256px);
+  /* The source's spread formula (0.5 + contrast * 1.1), fed to a contrast filter instead of
+     the canvas sampler. Grey on grey: no hue. */
+  filter: contrast(var(--fx-noise-contrast, 1.16));
+  /* Two animation slots, both empty unless asked for: slot A is the transform jitter, slot B
+     the opacity flicker. Longhands, not the shorthand, so each can be enabled on its own. */
+  animation-name: var(--fx-noise-jitter, none), var(--fx-noise-pulse, none);
+  animation-duration: var(--fx-noise-duration, 1s), var(--dur-slow);
+  animation-timing-function: step-end, var(--ease-press);
+  animation-iteration-count: infinite, infinite;
+  animation-direction: normal, alternate;
+}
+
+/* CRT scanline plate: pure ink on transparency, geometry copied from the source. The source
+   rolled it by 1px per frame from its rAF loop; that is a background-position animation, so it
+   stays static here (transform/opacity only). */
+.fx-noise-scanlines {
+  position: absolute;
+  inset: 0;
+  opacity: var(--fx-noise-scanline-opacity, 0);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--ink) 55%, transparent) 0,
+    color-mix(in srgb, var(--ink) 55%, transparent) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* --- opt-in motion --- */
+
+.fx-noise--animated .fx-noise-grain {
+  --fx-noise-jitter: fx-noise-jitter;
+  will-change: transform;
+}
+
+.fx-noise--flicker .fx-noise-grain {
+  --fx-noise-pulse: fx-noise-flicker;
+}
+
+@keyframes fx-noise-jitter {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  16.66% {
+    transform: translate3d(-6px, 3px, 0);
+  }
+  33.33% {
+    transform: translate3d(5px, -7px, 0);
+  }
+  50% {
+    transform: translate3d(-3px, -5px, 0);
+  }
+  66.66% {
+    transform: translate3d(7px, 4px, 0);
+  }
+  83.33% {
+    transform: translate3d(-7px, 6px, 0);
+  }
+}
+
+/* Source: opacity = opacity * (1 - flicker * random * 0.7), i.e. a dip toward 30% of the set
+   opacity at full depth. `--fx-noise-flicker-depth` carries that 1 - flicker * 0.7 term. */
+@keyframes fx-noise-flicker {
+  from {
+    opacity: var(--fx-noise-opacity, 0.05);
+  }
+  to {
+    opacity: calc(var(--fx-noise-opacity, 0.05) * var(--fx-noise-flicker-depth, 0.5));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Repeated with the modifier selectors on purpose: equal specificity, later in the file,
+     so the opt-in states are neutralised too. */
+  .fx-noise-grain,
+  .fx-noise--animated .fx-noise-grain,
+  .fx-noise--flicker .fx-noise-grain {
+    animation-name: none;
+    transform: none;
+    will-change: auto;
+  }
+}

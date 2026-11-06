@@ -1,0 +1,1096 @@
+/*
+ * Shared styles for src/components/charts/*.
+ *
+ * The vendored reference kept all of its CSS in a template string and painted cards with
+ * gradient backgrounds, a blurred colour core, glass panels and three hues for asset classes.
+ * All of that is gone. What survives here is its geometry and its monochrome visual language:
+ * emphasis by weight, opacity, dash and pattern; hue only for `elevated` (--warn) and `failed`
+ * (--danger). Tokens come from :root in src/app/globals.css, so charts track the theme.
+ *
+ * The charts render as static server HTML. Motion is one-shot, short, transform/opacity/
+ * stroke-dashoffset only, and the whole file rests in the final drawn state under reduced
+ * motion at the bottom.
+ */
+
+/* ---------- shell ---------- */
+
+.szc-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-panel);
+  background: var(--deep);
+  color: var(--paper);
+}
+
+.szc-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+/* Source line 97 (.cap): the mono, letterspaced label above data. */
+.szc-cap {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dust);
+  margin: 0;
+}
+
+/* Source line 102 (.chip): the pill readout. */
+.szc-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--lift);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+}
+
+.szc-readout {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+
+.szc-readout-unit {
+  font-size: 11px;
+  color: var(--dust);
+}
+
+.szc-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--dust);
+}
+
+.szc-caption {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--dust);
+}
+
+/* ---------- legend: pattern, dash, weight, opacity - never hue ---------- */
+
+.szc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 12px;
+  color: var(--mist);
+}
+
+.szc-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.szc-legend-swatch {
+  flex: 0 0 auto;
+  display: block;
+}
+
+/* ---------- plot frame ---------- */
+
+.szc-plot {
+  position: relative;
+  width: 100%;
+  min-height: 120px;
+  /* The stream runs to the edges of its frame, exactly like the source's absolute SVG. */
+  overflow: hidden;
+  border-radius: var(--r-field);
+  background: var(--ink);
+}
+
+.szc-svg {
+  display: block;
+  width: 100%;
+}
+
+/* Every stretched plot uses preserveAspectRatio="none" plus non-scaling strokes so labels can
+ * live in real-pixel HTML and stay legible at 375px. */
+.szc-svg-stretch {
+  height: 100%;
+}
+
+/* Empty plot: an honest hole, not a flat line pretending to be a trend. */
+.szc-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  border: 1px dashed var(--edge);
+  border-radius: var(--r-field);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dust);
+  background: var(--ink);
+}
+
+/* ---------- SVG primitives ---------- */
+
+.szc-axis {
+  stroke: var(--edge);
+  stroke-width: 1;
+}
+
+.szc-axis--strong {
+  stroke: var(--mist);
+}
+
+.szc-rail-line {
+  stroke: var(--rule);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.szc-rail-nub {
+  stroke: var(--dust);
+  stroke-width: 1;
+}
+
+.szc-guide {
+  stroke: var(--edge);
+  stroke-width: 1;
+}
+
+.szc-grid {
+  pointer-events: none;
+}
+
+/* Stream bands: fill is paper at a per-series opacity ladder, plus an ink pattern on top. */
+.szc-band {
+  fill: var(--paper);
+}
+
+.szc-band-texture {
+  stroke: none;
+}
+
+.szc-band-group .szc-band,
+.szc-band-group .szc-band-texture,
+.szc-band-group .szc-band-edge,
+.szc-band-group .szc-line,
+.szc-band-group .szc-wash {
+  animation: szc-fade-in var(--dur-base) var(--ease-press) backwards;
+}
+
+.szc-band-group:nth-of-type(2) .szc-band,
+.szc-band-group:nth-of-type(2) .szc-band-texture,
+.szc-band-group:nth-of-type(2) .szc-band-edge {
+  animation-delay: calc(var(--dur-fast) / 2);
+}
+
+.szc-band-group:nth-of-type(3) .szc-band,
+.szc-band-group:nth-of-type(3) .szc-band-texture,
+.szc-band-group:nth-of-type(3) .szc-band-edge {
+  animation-delay: var(--dur-fast);
+}
+
+.szc-band-edge {
+  stroke: var(--paper);
+  stroke-width: 1.2;
+}
+
+.szc-wash {
+  fill: var(--paper);
+}
+
+.szc-line {
+  stroke: var(--paper);
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The window being read: full weight and full opacity, the source's j === 0 lines. */
+.szc-primary {
+  stroke-width: 2.4;
+  stroke-opacity: 1;
+}
+
+/* One-shot draw-in. Only transform-free: stroke-dashoffset on a pathLength-normalised path. */
+.szc-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: szc-draw-in var(--dur-slow) var(--ease-press) backwards;
+}
+
+/* Source line 346: earlier windows stay readable at 1.6 weight and .55 opacity. The dash
+ * marks them as context, not hue. */
+.szc-secondary {
+  stroke-width: 1.6;
+  stroke-opacity: 0.5;
+  stroke-dasharray: 10 4;
+}
+
+.szc-marker {
+  stroke: var(--paper);
+  stroke-linecap: round;
+}
+
+/* Semantic hue, and only here. */
+.szc-danger {
+  stroke: var(--danger);
+}
+
+.szc-band-group[data-tone="elevated"] .szc-band,
+.szc-band-group[data-tone="elevated"] .szc-band-edge,
+.szc-band-group[data-tone="elevated"] .szc-line,
+.szc-band-group[data-tone="elevated"] .szc-wash,
+.szc-legend-item[data-tone="elevated"] .szc-line,
+.szc-legend-item[data-tone="elevated"] .szc-band,
+.szc-y-tick[data-tone="elevated"],
+.szc-total[data-tone="elevated"] .szc-td-num {
+  stroke: var(--warn);
+  fill: var(--warn);
+  color: var(--warn);
+}
+
+.szc-band-group[data-tone="failed"] .szc-band,
+.szc-band-group[data-tone="failed"] .szc-band-edge,
+.szc-band-group[data-tone="failed"] .szc-line,
+.szc-band-group[data-tone="failed"] .szc-wash,
+.szc-legend-item[data-tone="failed"] .szc-line,
+.szc-legend-item[data-tone="failed"] .szc-band,
+.szc-total[data-tone="failed"] .szc-td-num {
+  stroke: var(--danger);
+  fill: var(--danger);
+  color: var(--danger);
+}
+
+/* Hover/scrub: the source's .hl line, kept as a pure-CSS reveal over a full-height hit strip. */
+.szc-bucket {
+  cursor: crosshair;
+}
+
+.szc-scrub {
+  stroke: var(--press);
+  stroke-width: 1.5;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-press);
+}
+
+.szc-bucket:hover .szc-scrub,
+.szc-bucket:focus-within .szc-scrub {
+  opacity: 0.85;
+}
+
+/* ---------- HTML rails, marks and labels (crisp at any container width) ---------- */
+
+.szc-y-rail {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3.25rem;
+  pointer-events: none;
+}
+
+.szc-y-tick {
+  position: absolute;
+  inset-inline-start: 0;
+  transform: translateY(-50%);
+  padding: 0 4px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--mist);
+}
+
+.szc-y-tick--axis {
+  color: var(--dust);
+}
+
+.szc-mark-rail {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.szc-mark-rail--axis .szc-mark {
+  top: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  justify-content: center;
+}
+
+.szc-mark {
+  position: absolute;
+  inset-block: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding-block: 2px;
+}
+
+.szc-mark-chip {
+  padding: 1px 7px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: var(--paper);
+}
+
+.szc-mark-chip--solo {
+  font-weight: 500;
+  color: var(--mist);
+}
+
+.szc-mark-label {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--mist);
+}
+
+/* Single-bucket readout list: one point gets numbers, not a shape. */
+.szc-single-track {
+  stroke: var(--lift);
+  stroke-linecap: round;
+}
+
+.szc-single-segment {
+  stroke: var(--paper);
+  stroke-linecap: butt;
+}
+
+.szc-single-list {
+  position: absolute;
+  inset-inline: 0.5rem;
+  top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.szc-single-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 12px;
+}
+
+.szc-single-name {
+  color: var(--mist);
+}
+
+.szc-single-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+
+.szc-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.szc-total {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+/* ---------- data tables (the accessible alternative) ---------- */
+
+.szc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.szc-table th,
+.szc-table td {
+  padding: 6px 0;
+  border-top: 1px solid var(--rule);
+  text-align: left;
+  font-weight: 500;
+  color: var(--mist);
+}
+
+.szc-table thead th {
+  border-top: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dust);
+}
+
+.szc-table tbody th {
+  color: var(--paper);
+}
+
+.szc-td-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--paper);
+}
+
+.szc-alt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ---------- column chart (HTML capsules so they stay round at any width) ---------- */
+
+.szc-columns {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 0 0.5rem;
+  align-items: end;
+}
+
+.szc-columns .szc-y-rail {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  inset: auto;
+  width: auto;
+  height: 100%;
+}
+
+.szc-col-plot {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  width: 100%;
+}
+
+.szc-gridline {
+  position: absolute;
+  inset-inline: 0;
+  border-top: 1px dashed var(--rule);
+}
+
+.szc-gridline--base {
+  inset-block-end: 0;
+  border-top-style: solid;
+  border-top-color: var(--edge);
+}
+
+.szc-cols {
+  position: relative;
+  display: grid;
+  height: 100%;
+  align-items: end;
+}
+
+/* Full-height cells keep the pointer target at or above 44px where a value is read on hover. */
+.szc-col {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+  min-height: 44px;
+  height: 100%;
+}
+
+.szc-col-track {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: min(22px, 100%);
+  height: 100%;
+}
+
+/* Source line 394: the recessive full-height capsule behind the value. */
+.szc-col-rail {
+  position: absolute;
+  inset-block: 0;
+  inset-inline: 0;
+  border-radius: 999px;
+  background: var(--lift);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+/* Source line 395: the value capsule, rx = bw/2, grown from the baseline. */
+.szc-col-bar {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  border-radius: 999px;
+  background: var(--paper);
+  transform-origin: bottom center;
+  animation: szc-rise var(--dur-slow) var(--ease-press) backwards;
+  transition: background-color var(--dur-fast) var(--ease-press);
+}
+
+.szc-col[data-latest="true"] .szc-col-bar {
+  box-shadow: 0 0 0 1px var(--press);
+}
+
+.szc-col[data-tone="elevated"] .szc-col-bar {
+  background: var(--warn);
+}
+
+.szc-col[data-tone="failed"] .szc-col-bar {
+  background: var(--danger);
+}
+
+.szc-col-note {
+  position: absolute;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--paper);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-press);
+}
+
+.szc-cols:not([data-dense]) .szc-col-note,
+.szc-col:hover .szc-col-note,
+.szc-col:focus-visible .szc-col-note {
+  opacity: 1;
+}
+
+.szc-col-foots {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 0.375rem;
+  border-top: 1px solid var(--rule);
+}
+
+.szc-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  font-size: 10px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.szc-foot-label {
+  font-family: var(--font-mono);
+  color: var(--mist);
+}
+
+.szc-foot-share {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--dust);
+}
+
+.szc-foot[data-tone="failed"] .szc-foot-label {
+  color: var(--danger);
+}
+
+.szc-foot[data-tone="elevated"] .szc-foot-label {
+  color: var(--warn);
+}
+
+/* ---------- tick gauge (half sweep of tick marks) ---------- */
+
+.szc-gauge {
+  position: relative;
+  width: 100%;
+}
+
+.szc-gauge-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 320px;
+  margin-inline: auto;
+}
+
+.szc-gauge-readout {
+  position: absolute;
+  inset-inline: 12%;
+  top: 58%;
+  transform: translateY(-50%);
+  text-align: center;
+}
+
+/* Source line 281: light weight, tabular, the only big number in the kit. */
+.szc-gauge-big {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(18px, 5.5vw, 30px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+
+.szc-gauge-note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--dust);
+}
+
+.szc-tick {
+  stroke: var(--paper);
+  stroke-linecap: round;
+  animation: szc-tick-in var(--dur-fast) linear backwards;
+}
+
+.szc-tick[data-state="used"] {
+  stroke-opacity: 1;
+}
+
+.szc-tick[data-state="headroom"] {
+  stroke-opacity: 0.26;
+}
+
+/* Past the limit every tick is consumed; this is a real failure, so hue is allowed. */
+.szc-tick[data-state="over"] {
+  stroke: var(--danger);
+  stroke-opacity: 1;
+}
+
+/* The caller's warning value, marked by pattern rather than colour. */
+.szc-tick[data-state="gate"] {
+  stroke: var(--paper);
+  stroke-opacity: 0.7;
+  stroke-dasharray: 2 2;
+}
+
+.szc-tick[data-state="unknown"] {
+  stroke-opacity: 0.14;
+}
+
+.szc-figure-gauge[data-tone="elevated"] .szc-tick[data-state="used"] {
+  stroke: var(--warn);
+}
+
+.szc-figure-gauge[data-tone="failed"] .szc-gauge-big {
+  color: var(--danger);
+}
+
+/* ---------- tick strip (the KPI runway treatment) ---------- */
+
+.szc-strip-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: 100%;
+}
+
+.szc-strip {
+  display: grid;
+  gap: 1px;
+  height: 22px;
+  align-items: end;
+}
+
+.szc-strip-tick {
+  width: 100%;
+  max-width: 2px;
+  height: 12px;
+  justify-self: center;
+  border-radius: 999px;
+  background: var(--paper);
+  opacity: 0.26;
+  animation: szc-fade-in var(--dur-fast) linear backwards;
+}
+
+.szc-strip-tick[data-major] {
+  height: 20px;
+  max-width: 3px;
+}
+
+.szc-strip-tick[data-state="used"] {
+  opacity: 1;
+}
+
+.szc-strip-tick[data-state="over"] {
+  background: var(--danger);
+  opacity: 1;
+}
+
+.szc-strip-tick[data-state="unknown"] {
+  opacity: 0.14;
+}
+
+.szc-strip-wrap[data-tone="elevated"] .szc-strip-tick[data-state="used"] {
+  background: var(--warn);
+}
+
+.szc-strip-readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 12px;
+}
+
+.szc-strip-note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dust);
+}
+
+/* ---------- KPI tile (source lines 89-101, minus gradients, glass and coloured glows) ---------- */
+
+/* Source line 56 `.grid`, without the 12-column finance dashboard layout: a wrapping row
+ * of hairline tiles that stays two-up at 375px. */
+.szc-tile-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.szc-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-card);
+  background: var(--lift);
+  color: var(--paper);
+  overflow: hidden;
+}
+
+/* The one solid tile in a row of hairlines: emphasis by inversion, not hue. */
+.szc-tile--solid {
+  border-color: var(--paper);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.szc-tile-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.szc-tile-cap {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dust);
+}
+
+.szc-tile--solid .szc-tile-cap,
+.szc-tile--solid .szc-tile-detail {
+  color: var(--ink);
+  opacity: 0.65;
+}
+
+.szc-tile-value {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(26px, 3.4vw, 38px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
+.szc-tile-detail {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dust);
+}
+
+.szc-tile[data-tone="elevated"] .szc-tile-value {
+  color: var(--warn);
+}
+
+.szc-tile[data-tone="failed"] .szc-tile-value {
+  color: var(--danger);
+}
+
+/* On a solid tile the accent field is the tile itself, so failure reads as a rule instead. */
+.szc-tile--solid[data-tone="failed"] {
+  border-left: 3px solid var(--danger);
+}
+
+.szc-tile--solid[data-tone="failed"] .szc-tile-value {
+  color: inherit;
+}
+
+.szc-tile-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
+/* ---------- sparkline ---------- */
+
+.szc-spark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  vertical-align: middle;
+}
+
+.szc-spark-svg {
+  display: block;
+  width: 96px;
+  height: 30px;
+}
+
+/* Source line 371: 1.5 weight, round joins, drawn once. */
+.szc-spark-line {
+  stroke: var(--paper);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: szc-draw-in var(--dur-base) var(--ease-press) backwards;
+}
+
+.szc-spark-wash {
+  fill: var(--paper);
+  fill-opacity: 0.14;
+}
+
+.szc-spark-base {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+
+.szc-spark-empty {
+  stroke: var(--edge);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.szc-spark-dot {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.szc-spark-readout {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mist);
+}
+
+.szc-spark[data-tone="elevated"] .szc-spark-line {
+  stroke: var(--warn);
+}
+
+.szc-spark[data-tone="elevated"] .szc-spark-dot {
+  fill: var(--warn);
+}
+
+.szc-spark[data-tone="failed"] .szc-spark-line {
+  stroke: var(--danger);
+}
+
+.szc-spark[data-tone="failed"] .szc-spark-dot {
+  fill: var(--danger);
+}
+
+/* ---------- narrow containers ---------- */
+
+/* Layout hooks for the two figures that carry their own grid. */
+.szc-figure-columns {
+  gap: 0.5rem;
+}
+
+.szc-figure-waves .szc-plot {
+  min-height: 160px;
+}
+
+@media (max-width: 420px) {
+  .szc-figure {
+    padding: 0.75rem;
+    gap: 0.625rem;
+  }
+
+  .szc-columns {
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+  }
+
+  .szc-y-rail {
+    width: 2.75rem;
+  }
+
+  .szc-y-tick,
+  .szc-mark-label {
+    font-size: 9.5px;
+  }
+
+  .szc-mark-chip {
+    font-size: 10px;
+  }
+
+  .szc-legend {
+    gap: 0.25rem 0.75rem;
+    font-size: 11px;
+  }
+
+  /* A sparkline in a table cell may not force the row wider than the viewport. */
+  .szc-spark-svg {
+    max-width: 100%;
+  }
+}
+
+/* ---------- motion ----------
+ *
+ * Only opacity, transform and stroke-dashoffset animate. Every animation is one-shot and uses
+ * `backwards` fill, so the resting state of each element is the state its own data declares.
+ * Nothing loops and nothing sweeps.
+ */
+
+/* `from`-only keyframes: the `to` value is each element's own opacity, not a flat 1. */
+@keyframes szc-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes szc-tick-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* pathLength is normalised to 1 by the charts, so one dash covers the whole path. */
+@keyframes szc-draw-in {
+  from {
+    stroke-dashoffset: 1;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes szc-rise {
+  from {
+    transform: scaleY(0);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/*
+ * Reduced motion: every chart rests in its final, fully drawn, readable state. The draw-in
+ * dashoffset sits at 0 (whole path visible), the capsules at full height, and the band, tick
+ * and strip fades are dropped so each element simply shows the opacity its data declares. The
+ * scrub line and the dense value notes keep their at-rest opacity (hidden until hovered):
+ * they are an affordance, never the only way to read a number.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .szc-band-group .szc-band,
+  .szc-band-group .szc-band-texture,
+  .szc-band-group .szc-band-edge,
+  .szc-band-group .szc-line,
+  .szc-band-group .szc-wash,
+  .szc-draw,
+  .szc-spark-line,
+  .szc-tick,
+  .szc-strip-tick,
+  .szc-col-bar {
+    animation: none;
+  }
+
+  .szc-draw,
+  .szc-spark-line {
+    stroke-dashoffset: 0;
+  }
+
+  .szc-col-bar,
+  .szc-scrub,
+  .szc-col-note {
+    transition: none;
+  }
+
+  .szc-col-bar {
+    transform: none;
+  }
+
+  .szc-bucket {
+    cursor: default;
+  }
+}
+
+/* A table ignores `width`; as a block the hidden data table cannot widen the page. */
+.szc-table.sr-only {
+  left: 0;
+  display: block;
+}

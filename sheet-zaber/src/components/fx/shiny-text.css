@@ -1,0 +1,24 @@
+/* Structure for the vendored ShinyText engine (shiny-text.tsx). The registry ships no
+   @keyframes for this component — the sweep is a requestAnimationFrame engine that writes
+   background-image per frame — so this sheet only holds the clip/foreground structure the
+   source expressed as Tailwind arbitrary variants, plus the reduced-motion guarantee. */
+
+.fx-shiny {
+  position: relative;
+  display: inline-block;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-shiny {
+    /* The JS engine also refuses to sweep (one-shot, loop and hover triggers both park);
+       the CSS here neutralises anything a consumer layered on top. Resting state is the
+       full-weight base colour (--mist by default) clipped to the text: readable, no shine. */
+    animation: none;
+    transition: none;
+  }
+}

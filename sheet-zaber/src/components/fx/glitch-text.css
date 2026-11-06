@@ -1,0 +1,138 @@
+/* Structure for the vendored GlitchText engine (glitch-text.tsx). The registry ships no
+   @keyframes for this component — every motion is a requestAnimationFrame loop writing
+   --glitch-* custom properties — so this sheet holds the source's Tailwind arbitrary-variant
+   strings moved verbatim (masks, clip-paths, transforms are geometry; the #000 stops below
+   are mask alpha channels, not displayed colour), plus the reduced-motion guarantee. */
+
+.fx-glitch {
+  position: relative;
+  margin-inline: auto;
+  user-select: none;
+  white-space: nowrap;
+  font-size: clamp(2rem, 10vw, 8rem);
+  font-weight: 800;
+  /* Source `bandMask()` helpers, now static definitions the rAF engine drives via vars. */
+  --glitch-mask-a: linear-gradient(
+    #000 var(--glitch-a-top, 0%),
+    transparent var(--glitch-a-top, 0%),
+    transparent calc(100% - var(--glitch-a-bottom, 100%)),
+    #000 calc(100% - var(--glitch-a-bottom, 100%))
+  );
+  --glitch-mask-b: linear-gradient(
+    #000 var(--glitch-b-top, 0%),
+    transparent var(--glitch-b-top, 0%),
+    transparent calc(100% - var(--glitch-b-bottom, 100%)),
+    #000 calc(100% - var(--glitch-b-bottom, 100%))
+  );
+}
+
+/* The pointer affordance only belongs to the click trigger (source had it unconditional). */
+.fx-glitch--pointer {
+  cursor: pointer;
+}
+
+.fx-glitch__text {
+  display: block;
+  transform-origin: 0 50%;
+  opacity: var(--glitch-alpha, 1);
+  transform: skewX(var(--glitch-skew, 0deg));
+}
+
+.fx-glitch__text--band {
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-image: var(--glitch-mask-a), var(--glitch-mask-b);
+  mask-image: var(--glitch-mask-a), var(--glitch-mask-b);
+}
+
+.fx-glitch__text--split {
+  position: relative;
+  z-index: 1;
+}
+
+.fx-glitch__slice {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  transform-origin: 0 50%;
+}
+
+.fx-glitch__slice--hidden {
+  display: none;
+}
+
+.fx-glitch__a--band {
+  clip-path: inset(var(--glitch-a-top, 0%) 0 var(--glitch-a-bottom, 100%) 0);
+  opacity: var(--glitch-alpha, 1);
+  text-shadow: var(--glitch-a-shadow, none);
+  transform: translate3d(var(--glitch-a-x, 0px), var(--glitch-a-y, 0px), 0) skewX(var(--glitch-skew, 0deg));
+}
+
+.fx-glitch__a--split {
+  color: var(--glitch-color-a, currentColor);
+  opacity: calc(var(--glitch-alpha, 1) * var(--glitch-split, 0));
+  transform: translate3d(var(--glitch-a-x, 0px), var(--glitch-a-y, 0px), 0) skewX(var(--glitch-skew, 0deg));
+}
+
+.fx-glitch__b--band {
+  -webkit-mask-image: var(--glitch-mask-a);
+  mask-image: var(--glitch-mask-a);
+  clip-path: inset(var(--glitch-b-top, 0%) 0 var(--glitch-b-bottom, 100%) 0);
+  opacity: var(--glitch-alpha, 1);
+  text-shadow: var(--glitch-b-shadow, none);
+  transform: translate3d(var(--glitch-b-x, 0px), var(--glitch-b-y, 0px), 0) skewX(var(--glitch-skew, 0deg));
+}
+
+.fx-glitch__b--split {
+  color: var(--glitch-color-b, currentColor);
+  opacity: calc(var(--glitch-alpha, 1) * var(--glitch-split, 0));
+  transform: translate3d(var(--glitch-b-x, 0px), var(--glitch-b-y, 0px), 0) skewX(var(--glitch-skew, 0deg));
+}
+
+/* Source CHAR_CLASS: hidden original glyph, pseudo-element shows the random replacement. */
+.fx-glitch__char {
+  position: relative;
+}
+
+.fx-glitch__char[data-glyph] {
+  visibility: hidden;
+}
+
+.fx-glitch__char::after {
+  visibility: visible;
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  overflow: hidden;
+  text-align: center;
+  content: attr(data-glyph);
+  color: var(--glitch-glyph, currentColor);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-glitch,
+  .fx-glitch__text,
+  .fx-glitch__slice,
+  .fx-glitch__char,
+  .fx-glitch__char::after {
+    /* The JS engine refuses to run and calls rest() (all --glitch-* vars park at their
+       readable defaults); these overrides make the same promise without any JS at all,
+       so the text rests at full opacity, unskewed, single-layer. */
+    animation: none;
+    transition: none;
+    --glitch-alpha: 1;
+    --glitch-skew: 0deg;
+  }
+
+  .fx-glitch__text {
+    opacity: 1;
+    transform: none;
+  }
+
+  .fx-glitch__slice {
+    display: none;
+  }
+}

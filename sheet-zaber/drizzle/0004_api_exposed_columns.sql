@@ -1,0 +1,1 @@
+ALTER TABLE "api_configurations" ADD COLUMN "exposed_columns" jsonb;

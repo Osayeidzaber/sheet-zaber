@@ -1,0 +1,302 @@
+/*
+ * Styles for src/components/fx/ink-features.tsx
+ * Adapted from InkOrbitFeatures (ink-orbit-saas-template), supplied by the project owner on 2026-11-05.
+ *
+ * The source shipped its stylesheet as a `<style>` string carrying its own light/dark `--ib-*` palette.
+ * Two things had to happen here:
+ *   1. Every colour maps onto the app's own Black Press custom properties (--ink/--deep/--lift/--raise,
+ *      --rule/--edge, --dust/--mist/--paper/--press), so the section cannot drift from the product and
+ *      cannot paint itself light. The template's light/dark switch went with them. The `#22c55e`
+ *      presence dot and the coloured drop-shadows are deleted; hue keeps its two documented meanings
+ *      only — a throttle is --warn, a refused/failed request is --danger.
+ *   2. Durations and easings come from --dur-fast / --dur-base / --dur-slow / --ease-press instead of the
+ *      source's hard-coded numbers.
+ *
+ * Only what Tailwind cannot express lives here: the ink hatch, the SVG stroke/fill roles that animate,
+ * `transform-box: fill-box`, the marching dash, the keyframes, the reduced-motion contract at the end.
+ * These rules are deliberately unlayered, so they win over Tailwind utilities: never combine one of the
+ * role classes with a `fill-*`/`stroke-*` utility on the same element — use the `-on`/`-warn` variants.
+ */
+
+/* ------------------------------------------------------------------ page plate */
+
+/* The source's diagonal hatch, inverted for a near-black ground: 1px paper hairlines, 10px pitch. */
+.fx-ink-hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(242 242 242 / 0.05) 0 1px,
+    transparent 1px 10px
+  );
+}
+
+/* ---------------------------------------------------------------- reveal on scroll */
+
+.fx-ink-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity var(--dur-slow) var(--ease-press),
+    transform var(--dur-slow) var(--ease-press);
+}
+
+.fx-ink-reveal[data-in="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------------------------------------------------------------- corner brackets */
+
+.fx-ink-bracket {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-style: solid;
+  border-width: 0;
+  border-color: var(--rule);
+  pointer-events: none;
+  transition:
+    border-color var(--dur-fast) var(--ease-press),
+    transform var(--dur-base) var(--ease-press);
+}
+
+.fx-ink-bracket-tl {
+  top: -6px;
+  left: -6px;
+  border-top-width: 1.5px;
+  border-left-width: 1.5px;
+}
+.fx-ink-bracket-tr {
+  top: -6px;
+  right: -6px;
+  border-top-width: 1.5px;
+  border-right-width: 1.5px;
+}
+.fx-ink-bracket-bl {
+  bottom: -6px;
+  left: -6px;
+  border-bottom-width: 1.5px;
+  border-left-width: 1.5px;
+}
+.fx-ink-bracket-br {
+  bottom: -6px;
+  right: -6px;
+  border-bottom-width: 1.5px;
+  border-right-width: 1.5px;
+}
+
+.fx-ink-frame:hover .fx-ink-bracket {
+  border-color: var(--paper);
+}
+.fx-ink-frame:hover .fx-ink-bracket-tl {
+  transform: translate(-3px, -3px);
+}
+.fx-ink-frame:hover .fx-ink-bracket-tr {
+  transform: translate(3px, -3px);
+}
+.fx-ink-frame:hover .fx-ink-bracket-bl {
+  transform: translate(-3px, 3px);
+}
+.fx-ink-frame:hover .fx-ink-bracket-br {
+  transform: translate(3px, 3px);
+}
+
+/* ---------------------------------------------------------------- diagram roles */
+
+.fx-ink-node {
+  fill: var(--raise);
+  stroke: var(--edge);
+}
+
+.fx-ink-node-on {
+  fill: var(--raise);
+  stroke: var(--paper);
+}
+
+.fx-ink-flow {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 1.2;
+  transition: stroke var(--dur-fast) var(--ease-press);
+}
+
+.fx-ink-flow-on {
+  stroke: var(--paper);
+}
+
+/* Marching hairline dashes, on the one active route only — never on all four at once. */
+.fx-ink-flow-live {
+  stroke-dasharray: 3 4;
+  animation: fx-ink-dash 1.2s linear infinite;
+}
+
+.fx-ink-hairline {
+  stroke: var(--rule);
+  stroke-dasharray: 2 3;
+}
+
+.fx-ink-hairline-on {
+  stroke: var(--paper);
+}
+
+.fx-ink-hairline-warn {
+  stroke: var(--warn);
+  stroke-dasharray: 2 3;
+}
+
+.fx-ink-packet {
+  fill: var(--paper);
+}
+
+/* A bare SVG <g> has no fill-box, so a hover nudge would swing around the SVG origin. */
+.fx-ink-tap {
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform var(--dur-base) var(--ease-press);
+}
+
+.fx-ink-tap:hover,
+.fx-ink-tap:focus-visible {
+  transform: translateY(-2px);
+}
+
+/* Filled = this verb needs a key with write scope; hollow = a read key is enough. */
+.fx-ink-scope {
+  fill: var(--paper);
+  stroke: var(--raise);
+  stroke-width: 1.5;
+}
+
+.fx-ink-scope-read {
+  fill: var(--raise);
+  stroke: var(--mist);
+  stroke-width: 1.5;
+}
+
+/* A readout chip is print, not decoration: paper plate, ink type — the app's inversion. */
+.fx-ink-tip {
+  fill: var(--paper);
+  stroke: var(--paper);
+}
+
+.fx-ink-tip-text {
+  fill: var(--ink);
+}
+
+.fx-ink-label {
+  fill: var(--dust);
+}
+
+.fx-ink-value {
+  fill: var(--mist);
+}
+
+.fx-ink-line {
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 1.4;
+  opacity: 0.85;
+}
+
+/* Chart draw-in: pathLength=1 keeps the dash maths resolution-independent, exactly as in the source. */
+.fx-ink-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset var(--dur-slow) var(--ease-press);
+}
+
+[data-in="true"] .fx-ink-draw {
+  stroke-dashoffset: 0;
+}
+
+.fx-ink-cursor {
+  stroke: var(--paper);
+  stroke-opacity: 0.35;
+}
+
+.fx-ink-marker {
+  fill: var(--raise);
+  stroke: var(--paper);
+  stroke-width: 1.5;
+}
+
+/* The selected stop's ring: the same paper hairline the global :focus-visible ring uses. */
+.fx-ink-selected {
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 1.2;
+}
+
+/* ---------------------------------------------------------------- printed envelope */
+
+.fx-ink-sheet {
+  transition:
+    transform var(--dur-slow) var(--ease-press),
+    opacity var(--dur-slow) var(--ease-press);
+}
+
+/* One-shot: remounted by key whenever a new response is printed, so it plays per intent only. */
+.fx-ink-sheet-in {
+  animation: fx-ink-sheet-in var(--dur-slow) var(--ease-press) both;
+}
+
+@keyframes fx-ink-dash {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+@keyframes fx-ink-sheet-in {
+  from {
+    opacity: 0;
+    transform: translate(14px, -10px) rotate(4deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Reduced motion: every diagram rests in its finished, fully informative state — the plate revealed, all
+ * four checks lit and labelled, the chart line already drawn, the counter already at the cap. The JS reads
+ * the same query and never renders the SMIL packets, the auto-stepper or the one-shot traced pass.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .fx-ink-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .fx-ink-flow-live {
+    animation: none;
+    stroke-dasharray: none;
+  }
+
+  .fx-ink-sheet,
+  .fx-ink-sheet-in {
+    animation: none;
+    transition: none;
+  }
+
+  .fx-ink-draw {
+    transition: none;
+    stroke-dashoffset: 0;
+  }
+
+  .fx-ink-bracket,
+  .fx-ink-tap {
+    transition: none;
+  }
+
+  .fx-ink-frame:hover .fx-ink-bracket,
+  .fx-ink-frame:hover .fx-ink-bracket-tl,
+  .fx-ink-frame:hover .fx-ink-bracket-tr,
+  .fx-ink-frame:hover .fx-ink-bracket-bl,
+  .fx-ink-frame:hover .fx-ink-bracket-br,
+  .fx-ink-tap:hover,
+  .fx-ink-tap:focus-visible {
+    transform: none;
+  }
+}

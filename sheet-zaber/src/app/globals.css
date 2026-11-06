@@ -1,0 +1,587 @@
+@import "tailwindcss";
+
+/* The whole app is dark; `dark:` variants key off `.dark` on <html>. */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Black Press tokens, shared with the Zaber portfolio so Sheet Zaber reads as the same
+ * developer's product: no hue in the chrome, emphasis by weight and inversion.
+ * Hue is reserved for exactly two meanings — a thing that is failing, and a thing that
+ * is degrading — never for decoration.
+ */
+:root,
+.dark {
+  --ink: #000000;
+  --deep: #050505;
+  --lift: #0a0a0a;
+  --raise: #101010;
+  --rule: #1f1f1f;
+  --edge: #3a3a3a;
+  --dust: #8a8a8a;
+  --mist: #bdbdbd;
+  --paper: #f2f2f2;
+  --press: #ffffff;
+  --warn: #fbbf24;
+  --danger: #f87171;
+
+  --gutter: clamp(16px, 5vw, 64px);
+  --pad-page: clamp(16px, 4vw, 40px);
+  --section-y: clamp(96px, 10vw, 160px);
+
+  --dur-fast: 180ms;
+  --dur-base: 420ms;
+  --dur-slow: 900ms;
+  --ease-press: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --r-field: 10px;
+  --r-panel: 12px;
+  --r-card: 14px;
+
+  --shadow-raised: 0 12px 32px rgb(0 0 0 / 0.6), 0 0 0 1px var(--edge);
+
+  /* Neutral registry slots so any shadcn-flavoured block stays on palette. */
+  --background: var(--ink);
+  --foreground: var(--paper);
+  --card: var(--lift);
+  --muted: var(--dust);
+  --border: var(--rule);
+  --destructive: var(--paper);
+  --primary: var(--paper);
+  --primary-foreground: var(--ink);
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-deep: var(--deep);
+  --color-lift: var(--lift);
+  --color-raise: var(--raise);
+  --color-rule: var(--rule);
+  --color-edge: var(--edge);
+  --color-dust: var(--dust);
+  --color-mist: var(--mist);
+  --color-paper: var(--paper);
+  --color-press: var(--press);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+
+  --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-instrument), ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --font-heading: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-field: var(--r-field);
+  --radius-panel: var(--r-panel);
+  --radius-card: var(--r-card);
+
+  --ease-press: var(--ease-press);
+
+  /* Without this slot `shadow-raised` is not a generated utility, and the elevation on
+     `components/app/account-menu.tsx:49` silently renders nothing. */
+  --shadow-raised: var(--shadow-raised);
+}
+
+@layer base {
+  html {
+    @apply font-sans;
+    overflow-x: clip;
+    color-scheme: dark;
+    background: var(--ink);
+    scroll-behavior: smooth;
+    /* Anchors land clear of the sticky header. */
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    overflow-x: clip;
+    background: var(--ink);
+    color: var(--paper);
+    font-feature-settings: "ss01", "ss02";
+  }
+
+  ::selection {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--paper);
+    outline-offset: 3px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--ink);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--edge);
+    border-radius: 999px;
+    border: 3px solid var(--ink);
+  }
+}
+
+@layer components {
+  /* The loudest rule in the system: a monospace, letterspaced label above data. */
+  .folio {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.2;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dust);
+  }
+
+  .folio-strong {
+    color: var(--paper);
+  }
+
+  .display {
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 0.86;
+  }
+
+  .aside {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  /* Tabular figures everywhere a number can change width: counts, ids, timings. */
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0 1.25rem;
+    border-radius: 999px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      background-color var(--dur-fast) var(--ease-press),
+      color var(--dur-fast) var(--ease-press),
+      border-color var(--dur-fast) var(--ease-press),
+      transform var(--dur-fast) var(--ease-press);
+  }
+  .pill:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .pill > span[aria-hidden="true"] {
+    transition: transform var(--dur-base) var(--ease-press);
+  }
+  .pill:hover > span[aria-hidden="true"]:not(.animate-spin) {
+    transform: translate(2px, -2px);
+  }
+
+  .pill-solid {
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .pill-solid:hover {
+    background: var(--press);
+  }
+
+  .pill-line {
+    border: 1px solid var(--edge);
+    color: var(--paper);
+  }
+  .pill-line:hover {
+    border-color: var(--paper);
+  }
+
+  /* The control for something that destroys data: hairline, honest wording. */
+  .pill-danger {
+    border: 1px solid var(--edge);
+    color: var(--danger);
+  }
+  .pill-danger:hover {
+    border-color: var(--danger);
+  }
+
+  .field {
+    width: 100%;
+    border-radius: var(--r-field);
+    border: 1px solid var(--edge);
+    background: var(--lift);
+    padding: 0.75rem 0.875rem;
+    font-size: 16px;
+    color: var(--paper);
+    outline: none;
+    transition: border-color var(--dur-fast) var(--ease-press);
+  }
+  .field::placeholder {
+    color: #7d7d7d;
+  }
+  .field:focus-visible {
+    border-color: var(--paper);
+    outline: none;
+  }
+  .field[aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+  .field:disabled {
+    color: var(--dust);
+    background: var(--ink);
+  }
+
+  .panel {
+    border: 1px solid var(--rule);
+    border-radius: var(--r-panel);
+    background: var(--deep);
+    transition: border-color var(--dur-base) var(--ease-press);
+  }
+  .panel:hover {
+    border-color: #2a2a2a;
+  }
+
+  .hairline-top {
+    border-top: 1px solid var(--rule);
+  }
+
+  .skip-link {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 100;
+    transform: translateY(-200%);
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 0.625rem 1.125rem;
+    font-weight: 600;
+    transition: transform var(--dur-fast) var(--ease-press);
+  }
+  .skip-link:focus-visible {
+    transform: translateY(0);
+  }
+
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 5px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--lift);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--mist);
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--lift) 0%, #141414 50%, var(--lift) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-sweep 1.4s var(--ease-press) infinite;
+    border-radius: 4px;
+  }
+
+  .reveal {
+    animation: reveal-up var(--dur-base) var(--ease-press) both;
+  }
+
+  /* Opening choreography, in CSS so it starts at first paint rather than after hydration.
+     Lines rise out of their own clip; supporting copy fades in fast enough to stay readable. */
+  .hero-line {
+    display: block;
+    overflow: hidden;
+    margin-bottom: -0.14em;
+    padding-bottom: 0.14em;
+    padding-right: 0.08em;
+  }
+  .hero-rise {
+    display: block;
+    animation: hero-rise var(--dur-slow) var(--ease-press) both;
+    animation-delay: var(--d, 0ms);
+  }
+  .hero-fade {
+    animation: hero-fade var(--dur-base) var(--ease-press) both;
+  }
+
+  .loader > span {
+    width: 3px;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--paper);
+    animation: loader-bar 900ms var(--ease-press) infinite;
+  }
+  .loader > span:nth-child(2) { animation-delay: 120ms; }
+  .loader > span:nth-child(3) { animation-delay: 240ms; }
+
+  /* Concentric hairlines: the portfolio's stand-in for its light tunnel. */
+  .ring-line {
+    position: absolute;
+    border: 1px solid #161616;
+    border-radius: 999px;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Native dialog veil — kept here because ::backdrop is not a Tailwind target. */
+  dialog::backdrop {
+    background: rgb(0 0 0 / 0.8);
+  }
+
+  /* Code surfaces: hairline, lift, 13px mono — the same treatment the docs pages use. */
+  pre.codeblock {
+    border: 1px solid var(--rule);
+    border-radius: var(--r-panel);
+    background: var(--lift);
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--mist);
+    overflow-x: auto;
+    white-space: pre;
+    tab-size: 2;
+  }
+
+  code.inline {
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--lift);
+    padding: 2px 6px;
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    color: var(--paper);
+  }
+}
+
+@layer utilities {
+  .gutter {
+    padding-inline: var(--gutter);
+  }
+  .pad-page {
+    padding-inline: var(--pad-page);
+  }
+  .section-y {
+    padding-block: var(--section-y);
+  }
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hero-rise {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise-on-scroll {
+  from {
+    transform: translateY(28px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes read-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Scroll-driven and JavaScript-free. A browser without view timelines just shows the page. */
+@keyframes ring-breathe {
+  to {
+    scale: 1.05;
+  }
+}
+
+@keyframes rule-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes plate-row {
+  0%, 100% {
+    background: transparent;
+    color: var(--dust);
+  }
+  35%, 65% {
+    background: var(--paper);
+    color: var(--ink);
+  }
+}
+
+@keyframes plate-json {
+  0%, 25%, 100% {
+    color: var(--dust);
+  }
+  45%, 70% {
+    color: var(--paper);
+  }
+}
+
+@keyframes plate-arrow {
+  0%, 20%, 100% {
+    transform: none;
+  }
+  40% {
+    transform: translateX(6px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A dashboard page assembles top-down. Short enough to finish before anyone reads it. */
+  .stagger-page > * > * {
+    animation: reveal-up var(--dur-base) var(--ease-press) both;
+  }
+  .stagger-page > * > :nth-child(2) { animation-delay: 30ms; }
+  .stagger-page > * > :nth-child(3) { animation-delay: 60ms; }
+  .stagger-page > * > :nth-child(n + 4) { animation-delay: 90ms; }
+
+  .ring-line {
+    animation: ring-breathe 16s ease-in-out infinite alternate;
+  }
+  .ring-line:nth-child(2n) {
+    animation-duration: 22s;
+  }
+  .rule-draw {
+    transform-origin: left;
+    animation: rule-draw var(--dur-slow) var(--ease-press) both;
+  }
+  .plate-row {
+    animation: plate-row 5s var(--ease-press) infinite;
+  }
+  .plate-json {
+    animation: plate-json 5s var(--ease-press) infinite;
+  }
+  .plate-arrow > span {
+    display: inline-block;
+    animation: plate-arrow 5s var(--ease-press) infinite;
+  }
+
+  @supports (animation-timeline: view()) {
+    .scroll-rise {
+      animation: rise-on-scroll linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+    .read-progress {
+      animation: read-progress linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+/* Edges fade only where there is more to scroll to. Without timelines the table simply scrolls. */
+@property --fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes scroll-shadow {
+  0% {
+    --fade-start: 0px;
+    --fade-end: 40px;
+  }
+  8%, 92% {
+    --fade-start: 40px;
+    --fade-end: 40px;
+  }
+  100% {
+    --fade-start: 40px;
+    --fade-end: 0px;
+  }
+}
+@supports (animation-timeline: scroll(self inline)) {
+  .scroll-shadow {
+    mask-image: linear-gradient(to right, transparent, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent);
+    animation: scroll-shadow linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+
+@keyframes loader-bar {
+  0%, 100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

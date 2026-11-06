@@ -1,0 +1,14 @@
+# Local reference/example copy of the old portfolio app; not part of this repo.
+portfolio/
+
+# Agent tooling scratch
+.superpowers/
+
+# Recovered session dumps; contain credentials.
+.recovery/
+
+# Internal planning notes, kept locally.
+sheet-zaber/docs/internal/
+
+# Local editor settings.
+.claude/

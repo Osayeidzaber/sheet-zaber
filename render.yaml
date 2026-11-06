@@ -1,0 +1,56 @@
+# Render Blueprint for Sheet Zaber. The portfolio in this repo is not part of it.
+# Secrets use `sync: false`: Render asks for them once, and they never live in git.
+# Pre-deploy commands and cron jobs need a paid plan. See sheet-zaber/docs/deployment-render.md.
+envVarGroups:
+  - name: sheet-zaber-env
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_CA_CERT
+        sync: false
+      - key: LOG_RETENTION_DAYS
+        value: "90"
+
+services:
+  - type: web
+    name: sheet-zaber
+    runtime: node
+    plan: starter
+    rootDir: sheet-zaber
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm build
+    preDeployCommand: corepack enable && pnpm db:deploy
+    startCommand: corepack enable && pnpm start
+    healthCheckPath: /api/health
+    envVars:
+      - fromGroup: sheet-zaber-env
+      - key: SESSION_SECRET
+        sync: false
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: OWNER_EMAIL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      - key: CLIENT_IP_HEADER
+        value: true-client-ip
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+
+  - type: cron
+    name: sheet-zaber-prune
+    runtime: node
+    plan: starter
+    rootDir: sheet-zaber
+    schedule: "30 3 * * *"
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false
+    startCommand: corepack enable && pnpm db:prune
+    envVars:
+      - fromGroup: sheet-zaber-env

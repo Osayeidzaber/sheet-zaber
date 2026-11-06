@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="620" viewBox="0 0 1600 620" role="img" aria-labelledby="title desc">
+  <title id="title">Sheet Zaber: Google Sheets as a REST API</title>
+  <desc id="desc">Black Press editorial cover: white typography, fine grid lines, and softly pulsing concentric rings on a black canvas.</desc>
+  <style>
+    .pulse { fill: none; stroke: #8a8a8a; opacity: 0; transform-box: fill-box; transform-origin: center; animation: pulse 6s cubic-bezier(.16,1,.3,1) infinite; }
+    .pulse.b { animation-delay: 2s; }
+    .pulse.c { animation-delay: 4s; }
+    .sweep { transform-origin: 1280px 310px; animation: sweep 12s linear infinite; }
+    .cursor { animation: blink 1.4s steps(2, jump-none) infinite; }
+    @keyframes pulse { 0% { transform: scale(.33); opacity: 0; } 15% { opacity: .55; } 100% { transform: scale(1); opacity: 0; } }
+    @keyframes sweep { to { transform: rotate(360deg); } }
+    @keyframes blink { 0% { opacity: 1; } 100% { opacity: .15; } }
+    @media (prefers-reduced-motion: reduce) { .pulse, .sweep, .cursor { animation: none; } }
+  </style>
+  <rect width="1600" height="620" fill="#000"/>
+  <g fill="none" stroke="#1f1f1f">
+    <path d="M64 96H1536M64 524H1536M1012 96V524"/>
+    <circle cx="1280" cy="310" r="187"/><circle cx="1280" cy="310" r="145"/>
+    <circle cx="1280" cy="310" r="103"/><circle cx="1280" cy="310" r="61"/>
+    <path d="M1064 310H1496M1280 96V524"/>
+  </g>
+  <circle class="pulse" cx="1280" cy="310" r="187"/>
+  <circle class="pulse b" cx="1280" cy="310" r="187"/>
+  <circle class="pulse c" cx="1280" cy="310" r="187"/>
+  <path class="sweep" d="M1280 310V123" stroke="#6a6a6a" fill="none"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#f2f2f2">
+    <text x="64" y="64" font-family="monospace" font-size="18" letter-spacing="3">SZ / SHEET ZABER</text>
+    <text x="1536" y="64" text-anchor="end" font-family="monospace" font-size="18" letter-spacing="3" fill="#bdbdbd">INVITATION ONLY</text>
+    <text x="58" y="275" font-size="130" font-weight="800" letter-spacing="-7">SHEET ZABER</text>
+    <text x="64" y="406" font-family="Georgia, serif" font-style="italic" font-size="104" letter-spacing="-4">Rows in. JSON out<tspan class="cursor">.</tspan></text>
+    <text x="64" y="472" font-size="23" fill="#bdbdbd">One Google Sheet tab, one private REST API.</text>
+    <rect x="1190" y="270" width="180" height="80" fill="#000"/>
+    <text x="1280" y="340" text-anchor="middle" font-size="84" font-weight="700" letter-spacing="-4">API</text>
+    <text x="64" y="573" font-family="monospace" font-size="17" letter-spacing="2" fill="#bdbdbd">BLACK PRESS / NEXT.JS / POSTGRES</text>
+    <text x="1536" y="573" text-anchor="end" font-family="monospace" font-size="17" letter-spacing="2" fill="#bdbdbd">DHAKA, BANGLADESH</text>
+  </g>
+</svg>

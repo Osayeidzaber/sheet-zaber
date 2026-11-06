@@ -1,0 +1,109 @@
+/*
+ * Styles for the vendored Magic UI "animated-circular-progress-bar"
+ * (https://magicui.design/r/animated-circular-progress-bar.json).
+ *
+ * The registry ships no `@keyframes` (meta.json `css: {}`); the source's only motion
+ * came from Tailwind's `animate-in fade-in` utilities (tailwindcss-animate), which are
+ * not installed in this app. Those are replaced here by the single `fx-ring-fade-in`
+ * opacity keyframe on the numeric readout. Everything else is a transition.
+ *
+ * The source animated `stroke-dasharray`; we keep the identical arc geometry but express
+ * it as the standard dashoffset form (dasharray = full circumference, dashoffset =
+ * circumference - arc length) so motion is on `stroke-dashoffset` / `transform` / `stroke`
+ * only. Custom-property math (--circumference, --percent-to-px, --stroke-percent,
+ * --gap-percent, --percent-to-deg, --offset-factor, --circle-size) is supplied inline by
+ * progress-ring.tsx and is unchanged from the source.
+ */
+
+.fx-progress-ring {
+  /* Map the source's arbitrary 1s / ease to the app tokens. */
+  --transition-length: var(--dur-slow);
+  --transition-step: var(--dur-base);
+  --delay: 0s;
+}
+
+.fx-progress-ring__thumb,
+.fx-progress-ring__gap {
+  fill: none;
+  stroke-dasharray: var(--circumference);
+  /* arc length = --stroke-percent * px-per-percent; offset leaves that much of the ring drawn. */
+  stroke-dashoffset: calc(
+    var(--circumference) - var(--stroke-percent) * var(--percent-to-px)
+  );
+  transform-origin: calc(var(--circle-size) / 2) calc(var(--circle-size) / 2);
+  transition-property: stroke-dashoffset, stroke, transform;
+  transition-duration: var(--transition-length);
+  transition-timing-function: var(--ease-press);
+  transition-delay: var(--delay);
+}
+
+/* Thumb = the value arc. Monochrome emphasis (paper) by default. */
+.fx-progress-ring__thumb {
+  stroke: var(--paper);
+  transform: rotate(
+    calc(
+      -90deg + var(--gap-percent) * var(--offset-factor) * var(--percent-to-deg)
+    )
+  );
+}
+
+/* Track = the complementary gap arc, mirroring the source's secondary circle. */
+.fx-progress-ring__gap {
+  --offset-factor-secondary: calc(1 - var(--offset-factor));
+  stroke: var(--rule);
+  transform: rotate(
+      calc(
+        1turn - 90deg -
+          (
+            var(--gap-percent) * var(--percent-to-deg) *
+            var(--offset-factor-secondary)
+          )
+      )
+    )
+    scaleY(-1);
+}
+
+/*
+ * Tone is the only colour channel and it is semantic: `warn` for a degraded /
+ * elevated-error reading, `danger` for a failing / disabled state. The track stays
+ * a hairline for every tone so the ring never turns decorative.
+ */
+.fx-progress-ring[data-tone="warn"] .fx-progress-ring__thumb {
+  stroke: var(--warn);
+}
+
+.fx-progress-ring[data-tone="danger"] .fx-progress-ring__thumb {
+  stroke: var(--danger);
+}
+
+.fx-progress-ring__value {
+  display: grid;
+  place-content: center;
+  /* Opacity-only fade replacing the source's `animate-in fade-in`. */
+  animation: fx-ring-fade-in var(--transition-length) var(--ease-press)
+    var(--delay) backwards;
+}
+
+@keyframes fx-ring-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * Reduced motion: neutralise everything this file animates. The ring rests at its
+ * final value (no dashoffset/stroke/transform transition), and the readout fade is
+ * dropped so the number is simply present. No spinner, no theatre.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .fx-progress-ring__thumb,
+  .fx-progress-ring__gap,
+  .fx-progress-ring__value {
+    transition: none;
+    animation: none;
+    opacity: 1;
+  }
+}

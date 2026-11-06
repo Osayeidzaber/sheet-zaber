@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "api_limit_per_day" integer DEFAULT 500 NOT NULL;--> statement-breakpoint
+ALTER TABLE "users" ADD CONSTRAINT "users_api_limit_per_day_check" CHECK (api_limit_per_day >= 0);

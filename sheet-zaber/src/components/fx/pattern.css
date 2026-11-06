@@ -1,0 +1,47 @@
+/*
+ * Motion for src/components/fx/pattern.tsx
+ * Adapted from Magic UI "grid-pattern" (https://magicui.design/r/grid-pattern.json) and
+ * Magic UI "dot-pattern" (https://magicui.design/r/dot-pattern.json).
+ *
+ * grid-pattern ships no keyframes at all and stays that way: the grid plate is static.
+ * dot-pattern animates its optional `glow` dots through `motion` (framer-motion) in JS.
+ * That package is not installed here and no dependency was added, so the very same
+ * animation (opacity 0.4 -> 1, scale 1 -> 1.5, reverse repeat, staggered per dot) lives in
+ * these CSS keyframes instead, using only opacity/transform.
+ */
+
+.fx-dot-glow {
+  /* Without fill-box a circle scales around the SVG origin instead of its own centre. */
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-name: fx-dot-pulse;
+  /* Source randomised 2-5s per dot; one token-derived duration + a per-dot phase instead. */
+  animation-duration: calc(var(--dur-slow) * 3);
+  animation-timing-function: var(--ease-press);
+  animation-iteration-count: infinite;
+  /* The source used repeatType: "reverse". */
+  animation-direction: alternate;
+  animation-delay: var(--fx-dot-delay, 0s);
+  will-change: opacity, transform;
+}
+
+@keyframes fx-dot-pulse {
+  from {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-dot-glow {
+    animation: none;
+    /* Hold the source's `initial` state rather than freezing mid-pulse. */
+    opacity: 0.4;
+    transform: none;
+    will-change: auto;
+  }
+}
