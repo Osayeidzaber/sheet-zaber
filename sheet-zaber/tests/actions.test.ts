@@ -88,6 +88,7 @@ const API_CONFIG_KEYS = [
   "permissions",
   "primaryKeyColumn",
   "rateLimitPerHour",
+  "shortId",
   "spreadsheetId",
   "tabTitle",
   "updatedAt",

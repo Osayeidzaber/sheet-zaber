@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Panel, PanelBody, PanelHeader, PageHeader } from "@/components/ui/panel"
 import { ErrorState } from "@/components/ui/state"
 import { isActionError } from "@/lib/action-result"
+import { apiPublicId } from "@/lib/api-public-id"
 import { requireUser } from "@/server/auth/guards"
 import { listApis } from "@/server/apis/service"
 import { listKeyItems } from "@/server/keys/service"
@@ -128,6 +129,7 @@ export default async function PlaygroundPage() {
         }))}
         apis={apis.map((api) => ({
           id: api.id,
+          publicId: apiPublicId(api.name, api.shortId),
           name: api.name,
           tabTitle: api.tabTitle,
           enabled: api.enabled,

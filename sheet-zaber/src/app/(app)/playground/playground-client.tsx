@@ -72,6 +72,8 @@ export type PlaygroundKeyOption = { id: string; name: string; keyPreview: string
 /** Every field is a real `ApiConfig` member (`src/server/apis/service.ts:68`), used only for annotation. */
 export type PlaygroundApiOption = {
   id: string
+  /** The short URL segment, used for every path this page shows or sends. */
+  publicId: string
   name: string
   tabTitle: string
   enabled: boolean
@@ -258,6 +260,7 @@ function PlaygroundForm({
   // Derive validity from the latest server lists without a prop-reset effect or losing other edits.
   const apiKeyId = keys.some((key) => key.id === selectedKeyId) ? selectedKeyId : ""
   const apiId = apis.some((api) => api.id === selectedApiId) ? selectedApiId : ""
+  const pathId = apis.find((api) => api.id === apiId)?.publicId ?? ""
   const [shapeId, setShapeId] = useState<PathShapeId>(saved?.shape ?? "list")
   const [record, setRecord] = useState(saved?.record ?? "")
   const [range, setRange] = useState(saved?.range ?? "")
@@ -298,18 +301,18 @@ function PlaygroundForm({
   )
 
   const composed = useMemo(
-    () => (apiId === "" ? null : composePath(apiId, shape, { record, range })),
-    [apiId, shape, record, range]
+    () => (pathId === "" ? null : composePath(pathId, shape, { record, range })),
+    [pathId, shape, record, range]
   )
 
   /** The line the user sees before sending: the shape template with whatever is filled in. */
   const previewPath = useMemo(() => {
     if (composed !== null && "path" in composed) return composed.path
-    if (apiId === "") return "{apiId}"
-    if (shape.input === "record") return `${apiId}/{record}`
-    if (shape.input === "range") return `${apiId}/range/A1:D20`
-    return shape.suffix === "" ? apiId : `${apiId}/${shape.suffix}`
-  }, [apiId, composed, shape])
+    if (pathId === "") return "{apiId}"
+    if (shape.input === "record") return `${pathId}/{record}`
+    if (shape.input === "range") return `${pathId}/range/A1:D20`
+    return shape.suffix === "" ? pathId : `${pathId}/${shape.suffix}`
+  }, [pathId, composed, shape])
 
   const note = grammarNote(shape, method)
   const selectedApi = apis.find((api) => api.id === apiId) ?? null
@@ -341,7 +344,7 @@ function PlaygroundForm({
     if (apiKeyId === "") blocked.apiKeyId = "Choose the key row this call authenticates with."
     if (apiId === "") blocked.apiId = "Choose the endpoint the path is built from."
 
-    const built = apiId === "" ? null : composePath(apiId, shape, { record, range })
+    const built = pathId === "" ? null : composePath(pathId, shape, { record, range })
     if (built !== null && "error" in built) {
       blocked[built.error] =
         built.error === "record"
@@ -446,7 +449,7 @@ function PlaygroundForm({
       setLastCall({
         request,
         response: outcome.response,
-        snippet: snippetRequestFor(request, apiId, shape, { record, range }, baseUrl, bodyValue),
+        snippet: snippetRequestFor(request, pathId, shape, { record, range }, baseUrl, bodyValue),
         // The builders accept a body only on POST/PATCH/PUT, so a body sent elsewhere is explained
         // in prose rather than silently dropped from the example.
         bodyHiddenFromSnippet: bodyValue !== undefined && !BODY_METHODS.includes(request.method),
@@ -464,7 +467,7 @@ function PlaygroundForm({
       inFlight.current = null
       setPending(false)
     }
-  }, [apiId, apiKeyId, baseUrl, bodyText, headerRows, method, queryRows, range, record, shape])
+  }, [apiId, apiKeyId, baseUrl, bodyText, headerRows, method, pathId, queryRows, range, record, shape])
 
   const reloadPage = useCallback(() => {
     window.location.reload()

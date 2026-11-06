@@ -10,6 +10,7 @@ import { Panel, PanelBody, PanelHeader, PageHeader, Row, RowTitle } from "@/comp
 import { ErrorState } from "@/components/ui/state"
 import { SnippetTabs } from "@/components/ui/snippet-tabs"
 import { isActionError } from "@/lib/action-result"
+import { apiPublicId } from "@/lib/api-public-id"
 import { formatDateTime, shortId } from "@/lib/format"
 import type { SnippetRequest } from "@/lib/snippets"
 import { requireUser } from "@/server/auth/guards"
@@ -51,13 +52,14 @@ export default async function ApiDetailPage({ params }: ApiPageProps) {
   const api = result.data
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001"
-  const endpointUrl = `${siteUrl}/api/v1/${api.id}`
+  const publicId = apiPublicId(api.name, api.shortId)
+  const endpointUrl = `${siteUrl}/api/v1/${publicId}`
   const spreadsheet = await findSpreadsheet(user.id, api.spreadsheetId)
 
   const listRequest: SnippetRequest = {
     baseUrl: `${siteUrl}/api/v1`,
     method: "GET",
-    apiId: api.id,
+    apiId: publicId,
     apiKey: "<YOUR_API_KEY>",
   }
 

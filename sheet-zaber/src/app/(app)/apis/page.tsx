@@ -52,7 +52,7 @@ export default async function ApisPage() {
       <PageHeader
         folio="03 — Endpoints"
         title="Endpoints" titleAside="published"
-        description="Each endpoint publishes one tab of one connected spreadsheet as a REST API, addressed at /api/v1/<endpoint id>. Every call needs an API key you create in Keys."
+        description="Each endpoint publishes one tab of one connected spreadsheet as a REST API, addressed at a short URL like /api/v1/orders-a1b2c. Every call needs an API key you create in Keys."
         action={
           <PillLink href="/apis/new" variant="solid" size="md">
             New endpoint

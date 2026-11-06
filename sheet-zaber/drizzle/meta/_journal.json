@@ -43,6 +43,13 @@
       "when": 1793972956771,
       "tag": "0005_user_username_can_invite",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793989773006,
+      "tag": "0006_api_short_id",
+      "breakpoints": true
     }
   ]
 }

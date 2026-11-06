@@ -14,6 +14,8 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core"
 
+import { generateShortId } from "../../lib/api-public-id"
+
 /*
  * Drizzle schema — the source of truth for the database (database-schema.md).
  *
@@ -171,8 +173,10 @@ export const registeredSpreadsheets = pgTable(
 export const apiConfigurations = pgTable(
   "api_configurations",
   {
-    // This PK is the public `{api_id}` — an unguessable uuid.
+    // The stable internal id. The engine still accepts it, so older URLs keep working.
     id: text("id").primaryKey(),
+    // The five characters that identify this API in its short URL (`lib/api-public-id.ts`).
+    shortId: text("short_id").notNull().$defaultFn(generateShortId),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -198,6 +202,7 @@ export const apiConfigurations = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$defaultFn(() => new Date()),
   },
   (t) => [
+    uniqueIndex("api_configurations_short_id_idx").on(t.shortId),
     index("api_configurations_user_id_idx").on(t.userId),
     index("api_configurations_enabled_idx").on(t.enabled),
     check("api_configurations_header_row_check", sql`header_row >= 1`),

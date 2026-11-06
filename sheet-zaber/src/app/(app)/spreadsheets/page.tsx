@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
-import { Badge, StatusDot } from "@/components/ui/badge"
+import { StatusDot } from "@/components/ui/badge"
 import { Metric, PageHeader, Panel } from "@/components/ui/panel"
 import { EmptyState, ErrorState } from "@/components/ui/state"
 import { Table, TableScroll, Td, Th, Tr, MonoCell } from "@/components/ui/table"
@@ -108,9 +108,13 @@ export default async function SpreadsheetsPage() {
                     </Td>
                     <Td className="whitespace-nowrap text-dust">{formatDateTime(sheet.updatedAt.toISOString())}</Td>
                     <Td align="right">
-                      <Badge variant="outline" className="justify-self-end">
+                      <Link
+                        href={`/spreadsheets/${sheet.id}`}
+                        aria-label={`Manage ${sheet.title || "Untitled spreadsheet"}`}
+                        className="pill pill-line min-h-10 px-4 text-[14px]"
+                      >
                         Manage
-                      </Badge>
+                      </Link>
                     </Td>
                   </Tr>
                 ))}

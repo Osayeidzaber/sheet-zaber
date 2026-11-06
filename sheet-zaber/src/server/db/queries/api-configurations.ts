@@ -2,6 +2,7 @@ import "server-only"
 
 import { and, desc, eq } from "drizzle-orm"
 
+import { generateShortId } from "@/lib/api-public-id"
 import type { SnippetMethod } from "@/lib/snippets"
 
 import { db } from "../client"
@@ -48,6 +49,13 @@ function client(q?: DbLike | DbTx): DbLike {
   return q ?? db
 }
 
+const MAX_SHORT_ID_ATTEMPTS = 5
+
+function isShortIdCollision(error: unknown): boolean {
+  const driverError = (error as { cause?: unknown } | null)?.cause ?? error
+  return (driverError as { constraint?: unknown } | null)?.constraint === "api_configurations_short_id_idx"
+}
+
 function asRow(row: typeof apiConfigurations.$inferSelect): ApiConfigurationRow {
   return row as ApiConfigurationRow
 }
@@ -62,24 +70,33 @@ export async function createApiConfiguration(
   input: ApiConfigInput & { userId: string },
   q?: DbLike | DbTx
 ): Promise<ApiConfigurationRow> {
-  const [row] = await client(q)
-    .insert(apiConfigurations)
-    .values({
-      id: crypto.randomUUID(),
-      userId: input.userId,
-      spreadsheetId: input.spreadsheetId,
-      name: input.name,
-      description: input.description ?? null,
-      tabTitle: input.tabTitle,
-      headerRow: input.headerRow,
-      primaryKeyColumn: input.primaryKeyColumn ?? null,
-      exposedColumns: input.exposedColumns ?? null,
-      permissions: input.permissions,
-      allowedOperations: input.allowedOperations,
-      rateLimitPerHour: input.rateLimitPerHour ?? null,
-    })
-    .returning()
-  return asRow(row)
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const [row] = await client(q)
+        .insert(apiConfigurations)
+        .values({
+          id: crypto.randomUUID(),
+          shortId: generateShortId(),
+          userId: input.userId,
+          spreadsheetId: input.spreadsheetId,
+          name: input.name,
+          description: input.description ?? null,
+          tabTitle: input.tabTitle,
+          headerRow: input.headerRow,
+          primaryKeyColumn: input.primaryKeyColumn ?? null,
+          exposedColumns: input.exposedColumns ?? null,
+          permissions: input.permissions,
+          allowedOperations: input.allowedOperations,
+          rateLimitPerHour: input.rateLimitPerHour ?? null,
+        })
+        .returning()
+      return asRow(row)
+    } catch (error) {
+      // Two APIs drawing the same short id is rare but possible, so draw again. A transaction is
+      // already aborted by the failure and cannot retry.
+      if (q !== undefined || attempt >= MAX_SHORT_ID_ATTEMPTS || !isShortIdCollision(error)) throw error
+    }
+  }
 }
 
 /** Dashboard lookup: a row the user does not own reads as absent (`security.md` §3 item 4). */

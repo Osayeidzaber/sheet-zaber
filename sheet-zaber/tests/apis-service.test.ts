@@ -46,6 +46,7 @@ const API_CONFIG_KEYS = [
   "permissions",
   "primaryKeyColumn",
   "rateLimitPerHour",
+  "shortId",
   "spreadsheetId",
   "tabTitle",
   "updatedAt",
@@ -198,6 +199,11 @@ describe("api configuration service", () => {
       })
       // The id is the public api_id: the engine resolver finds it.
       expect((await service.resolveEngineApi(result.data.id))?.id).toBe(result.data.id)
+      // So does the short URL, bare or with any name in front, which is what keeps a rename safe.
+      expect(result.data.shortId).toMatch(/^[a-z0-9]{5}$/)
+      expect((await service.resolveEngineApi(`roster-v2-${result.data.shortId}`))?.id).toBe(result.data.id)
+      expect((await service.resolveEngineApi(`old-name-${result.data.shortId}`))?.id).toBe(result.data.id)
+      expect((await service.resolveEngineApi(result.data.shortId))?.id).toBe(result.data.id)
       expect((await service.getApi(result.data.id, alice.id)).ok).toBe(true)
       expect(await service.listApis(alice.id)).toMatchObject({ ok: true, data: [result.data] })
     })

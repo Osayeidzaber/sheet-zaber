@@ -1,8 +1,9 @@
 import "server-only"
 
-import { and, eq } from "drizzle-orm"
+import { and, eq, or } from "drizzle-orm"
 
 import type { ActionResult } from "@/lib/action-result"
+import { shortIdFromPublicId } from "@/lib/api-public-id"
 import { fail, internalError, ok } from "@/lib/action-result"
 import { apiConfigSchema, apiConfigUpdateSchema } from "@/lib/schemas"
 import type { SnippetMethod } from "@/lib/snippets"
@@ -68,6 +69,7 @@ const PATCH_KEYS = [
  */
 export type ApiConfig = {
   id: string
+  shortId: string
   spreadsheetId: string
   name: string
   description: string | null
@@ -192,6 +194,7 @@ function asPermissions(value: string): ApiPermissions {
 function toApiConfig(row: ApiConfigurationRow): ApiConfig {
   return {
     id: row.id,
+    shortId: row.shortId,
     spreadsheetId: row.spreadsheetId,
     name: row.name,
     description: row.description,
@@ -346,6 +349,8 @@ export async function listApis(userId: string): Promise<ActionResult<ApiConfig[]
  * Authorization (key scope/owner) is NOT here — see `keys/service.ts#authorizeKeyCall`.
  */
 export async function resolveEngineApi(apiId: string): Promise<EngineApi | null> {
+  // A short URL (`name-a1b2c`) or the older full id: both address the same row.
+  const shortId = shortIdFromPublicId(apiId)
   const [row] = await db
     .select({
       id: apiConfigurations.id,
@@ -367,7 +372,9 @@ export async function resolveEngineApi(apiId: string): Promise<EngineApi | null>
     )
     .where(
       and(
-        eq(apiConfigurations.id, apiId),
+        shortId === null
+          ? eq(apiConfigurations.id, apiId)
+          : or(eq(apiConfigurations.id, apiId), eq(apiConfigurations.shortId, shortId)),
         eq(apiConfigurations.enabled, true),
         eq(registeredSpreadsheets.status, "active")
       )
