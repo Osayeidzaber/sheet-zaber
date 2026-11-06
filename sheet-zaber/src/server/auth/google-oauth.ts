@@ -23,12 +23,13 @@ export type GoogleIdentity = {
   picture: string | null
 }
 
-/** v1 consent scope list (google-integration.md §1). `drive.readonly` is deferred (§5). */
+/** Consent scopes (google-integration.md §1). `drive.file` covers only files picked in the Picker. */
 export const GOOGLE_OAUTH_SCOPES: readonly string[] = [
   "openid",
   "email",
   "profile",
   "https://www.googleapis.com/auth/spreadsheets",
+  "https://www.googleapis.com/auth/drive.file",
 ]
 
 /** Landing page after a successful sign-in (`authentication-flow.md` §1). */
@@ -66,7 +67,8 @@ export function buildAuthUrl(input: {
     scope: GOOGLE_OAUTH_SCOPES.join(" "),
     // §1: offline + consent guarantees a refresh token on EVERY grant, not only the first.
     access_type: "offline",
-    prompt: "consent",
+    // select_account so a second Google account can be chosen rather than the signed-in one reused.
+    prompt: "select_account consent",
     include_granted_scopes: "true",
     state: input.state,
     code_challenge: input.challenge,

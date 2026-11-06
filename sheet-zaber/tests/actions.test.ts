@@ -356,6 +356,7 @@ function allVerbs(): [string, () => Promise<unknown>][] {
     ["regenerateKeyAction", () => actions.keys.regenerateKeyAction(uuid())],
     ["listKeysAction", () => actions.keys.listKeysAction()],
     ["listConnectionsAction", () => actions.connections.listConnectionsAction()],
+    ["pickerTokenAction", () => actions.connections.pickerTokenAction("00000000-0000-4000-8000-000000000000")],
     ["disconnectGoogleAction", () => actions.connections.disconnectGoogleAction(uuid())],
     ["createInvitationsAction", () => actions.invitations.createInvitationsAction({ count: 1 })],
     ["inviteUsersAction", () => actions.invitations.inviteUsersAction(["a@example.com"], {})],

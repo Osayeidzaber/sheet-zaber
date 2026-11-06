@@ -20,6 +20,10 @@
  * used here because it answers `not_found` where this layer owes `unauthenticated`.
  */
 
+import { fail, ok } from "@/lib/action-result"
+import { env } from "@/lib/env"
+import { findConnectionForUser } from "@/server/db/queries/google-connections"
+import { DRIVE_FILE_SCOPE, mintPickerToken } from "@/server/google/tokens"
 import type { ActionResult } from "@/lib/action-result"
 import {
   disconnectGoogle,
@@ -42,4 +46,25 @@ export async function listConnectionsAction(): Promise<ActionResult<Connection[]
  */
 export async function disconnectGoogleAction(connectionId: string): Promise<ActionResult<{ id: string }>> {
   return userAction((session) => disconnectGoogle(session.id, connectionId))
+}
+
+/**
+ * A short-lived, `drive.file`-only token for the Google Picker, for one of the caller's own accounts.
+ * An account connected before the Picker existed lacks the scope and must reconnect.
+ */
+export async function pickerTokenAction(connectionId: string): Promise<ActionResult<{ token: string; appId: string }>> {
+  return userAction(async (session) => {
+    const needsReconnect = fail(
+      "google_reauth_required",
+      "Reconnect this Google account to choose sheets from Drive.",
+      "google"
+    )
+    const row = await findConnectionForUser(session.id, connectionId)
+    if (!row) return fail("not_found", "No connected Google account matches that id.", "not_found")
+    if (row.status !== "connected" || !row.scope.includes(DRIVE_FILE_SCOPE)) return needsReconnect
+    const token = await mintPickerToken(row)
+    if (token === null) return needsReconnect
+    // The Picker's app id is the Cloud project number, the first part of the OAuth client id.
+    return ok({ token, appId: (env.GOOGLE_CLIENT_ID ?? "").split("-")[0] })
+  })
 }

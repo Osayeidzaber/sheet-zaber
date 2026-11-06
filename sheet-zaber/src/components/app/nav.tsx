@@ -85,7 +85,9 @@ export function Nav({
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex min-h-11 w-full items-center justify-between gap-3 rounded-full px-4 text-[14px] whitespace-nowrap font-medium transition-colors duration-(--dur-fast)",
-                  active ? "bg-paper text-ink hover:bg-press hover:text-ink" : "text-mist hover:bg-lift hover:text-paper"
+                  active
+                    ? "bg-paper text-ink hover:bg-press hover:text-ink"
+                    : "relative text-mist before:absolute before:top-1/2 before:left-0 before:h-5 before:w-0.5 before:-translate-y-1/2 before:scale-y-0 before:rounded-full before:bg-paper before:transition-transform before:duration-(--dur-base) before:ease-(--ease-press) hover:bg-lift hover:text-paper hover:before:scale-y-100 focus-visible:before:scale-y-100"
                 )}
               >
                 <span className="flex min-w-0 items-center gap-3">

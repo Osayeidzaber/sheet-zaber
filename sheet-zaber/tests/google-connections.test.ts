@@ -217,9 +217,9 @@ describe("GET /auth/google", () => {
     const consent = new URL(response.headers.get("location") ?? "")
     expect(`${consent.origin}${consent.pathname}`).toBe("https://accounts.google.com/o/oauth2/v2/auth")
     expect(consent.searchParams.get("access_type")).toBe("offline")
-    expect(consent.searchParams.get("prompt")).toBe("consent")
+    expect(consent.searchParams.get("prompt")).toBe("select_account consent")
     expect(consent.searchParams.get("scope")).toContain("https://www.googleapis.com/auth/spreadsheets")
-    expect(consent.searchParams.get("scope")).not.toContain("drive")
+    expect(consent.searchParams.get("scope")).not.toContain("drive.readonly")
 
     const stateHeader = cookieHeaderFor(response, oauth.OAUTH_STATE_COOKIE)
     expect(stateHeader).not.toBeNull()

@@ -63,7 +63,7 @@ discarded.
 Consent asks for four scopes: `openid`, `email`, `profile` and
 `.../auth/spreadsheets`. All four are requested on every consent redirect, sign-in included: the app
 asks for spreadsheet access when it connects your account, because reading and writing your sheets is
-the product. It does not ask for Drive access, and no code path can list your files.
+the product. The `drive.file` scope only covers files you choose in Google's Picker, so the app cannot list or read the rest of your Drive.
 
 Consent uses `access_type=offline` + `prompt=consent`, so Google returns a refresh token — that is
 what lets an endpoint keep serving your sheet on later calls made by other people holding your API
@@ -118,9 +118,9 @@ recorded without query strings, so filter values, search terms and paging parame
 
 Never logged, because no column exists for them: request or response bodies, headers, cookies, API
 keys, Google tokens, cell values. **No IP address is stored anywhere** — the client IP is used only as
-a one-way hashed component of a transient rate-limit counter. An "origin host" column exists in the
-schema, but the engine passes `origin: null` (`src/server/engine/handle.ts:944`), so no caller origin
-is recorded.
+a one-way hashed component of a transient rate-limit counter. The log also keeps the hostname from a
+request's Origin or Referer header when one is sent, never its path or query, and the account owner can
+see it in their usage figures.
 
 Administrative actions (disable, re-enable, role change, invitation create/revoke, key revocation,
 platform settings) write an audit row naming actor, action, subject and non-secret detail — including

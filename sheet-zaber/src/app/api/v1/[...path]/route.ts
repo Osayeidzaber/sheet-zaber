@@ -30,6 +30,17 @@ function bearerToken(request: Request): string {
   return header.replace(BEARER_SCHEME, "").trim()
 }
 
+/** Hostname only: a Referer path or query could hold data. Unparseable values count as absent. */
+function originHost(request: Request): string | null {
+  const value = request.headers.get("origin") ?? request.headers.get("referer")
+  if (!value) return null
+  try {
+    return new URL(value).hostname.slice(0, 253) || null
+  } catch {
+    return null
+  }
+}
+
 async function forward(request: Request, context: RouteContext, method: SnippetMethod): Promise<Response> {
   const { path } = await context.params
 
@@ -42,6 +53,7 @@ async function forward(request: Request, context: RouteContext, method: SnippetM
     bodyText: method === "GET" ? null : await readBody(request),
     // A bucket dimension only — never logged or stored in the clear (`security.md` §2).
     ip: clientBucketIp(request),
+    origin: originHost(request),
   }
 
   const outcome = await handleEngineCall(call)

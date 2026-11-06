@@ -997,9 +997,8 @@ export async function handleEngineCall(
       durationMs: trace.durationMs,
       requestBytes: bodyBytes(call.bodyText),
       errorCategory: result.status >= 400 ? trace.errorCategory : null,
-      // `origin` is the Origin/Referer host, which `EngineCall` does not carry; `ip` is a bucket
-      // dimension only and is never stored (`security.md` §2).
-      origin: null,
+      // Hostname only. `ip` is a bucket dimension and is never stored (`security.md` §2).
+      origin: call.origin ?? null,
     })
   } catch (error) {
     console.error("[engine] request log failed", error)

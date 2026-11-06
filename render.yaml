@@ -35,6 +35,8 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+      - key: NEXT_PUBLIC_GOOGLE_PICKER_API_KEY
+        sync: false
       - key: NEXT_PUBLIC_SITE_URL
         sync: false
       - key: CLIENT_IP_HEADER

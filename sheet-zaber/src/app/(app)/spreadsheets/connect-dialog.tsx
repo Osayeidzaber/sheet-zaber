@@ -16,6 +16,10 @@ import { Button, PillLink } from "@/components/ui/button"
 import { Dialog } from "@/components/ui/dialog"
 import { SelectField, TextField } from "@/components/ui/field"
 import { connectSpreadsheetAction, type ConnectState } from "@/app/(app)/spreadsheets/actions"
+import { isActionError } from "@/lib/action-result"
+import { pickerTokenAction } from "@/server/actions/connections"
+
+import { PICKER_API_KEY, pickSpreadsheet } from "./drive-picker"
 
 export type ConnectableAccount = {
   id: string
@@ -30,18 +34,77 @@ const REAUTH_CODES = new Set(["google_reauth_required", "google_not_connected"])
 
 export function ConnectDialog({ accounts }: { accounts: ConnectableAccount[] }) {
   const [open, setOpen] = useState(false)
+  const [prefill, setPrefill] = useState<Prefill>({ url: "", connectionId: "" })
+  const [pickerError, setPickerError] = useState<string | null>(null)
+
+  // The Picker draws under a native modal, so the form closes while it is up and returns filled in.
+  async function browse(token: string, appId: string, connectionId: string, url: string) {
+    setOpen(false)
+    setPickerError(null)
+    let picked: string | null = null
+    try {
+      picked = await pickSpreadsheet(token, appId)
+    } catch (error) {
+      setPickerError(error instanceof Error ? error.message : "The Google Picker could not open.")
+    }
+    setPrefill({ url: picked ?? url, connectionId })
+    setOpen(true)
+  }
 
   return (
     <>
-      <Button variant="solid" size="md" onClick={() => setOpen(true)}>
+      <Button
+        variant="solid"
+        size="md"
+        onClick={() => {
+          setPrefill({ url: "", connectionId: "" })
+          setPickerError(null)
+          setOpen(true)
+        }}
+      >
         Connect spreadsheet
       </Button>
-      {open ? <ConnectForm accounts={accounts} onClose={() => setOpen(false)} /> : null}
+      {open ? (
+        <ConnectForm accounts={accounts} prefill={prefill} initialPickerError={pickerError} onBrowse={browse} onClose={() => setOpen(false)} />
+      ) : null}
     </>
   )
 }
 
-function ConnectForm({ accounts, onClose }: { accounts: ConnectableAccount[]; onClose: () => void }) {
+type Prefill = { url: string; connectionId: string }
+
+function ConnectForm({
+  accounts,
+  prefill,
+  initialPickerError,
+  onBrowse,
+  onClose,
+}: {
+  accounts: ConnectableAccount[]
+  prefill: Prefill
+  initialPickerError: string | null
+  onBrowse: (token: string, appId: string, connectionId: string, url: string) => void
+  onClose: () => void
+}) {
+  const [connectionId, setConnectionId] = useState(prefill.connectionId || (accounts.length === 1 ? accounts[0].id : ""))
+  const [url, setUrl] = useState(prefill.url)
+  const [pickerError, setPickerError] = useState(initialPickerError)
+  const [opening, setOpening] = useState(false)
+
+  async function chooseFromDrive() {
+    setOpening(true)
+    setPickerError(null)
+    try {
+      const result = await pickerTokenAction(connectionId)
+      if (isActionError(result)) setPickerError(result.error.message)
+      else onBrowse(result.data.token, result.data.appId, connectionId, url)
+    } catch {
+      setPickerError("The Google Picker could not open. Check that you are still signed in.")
+    } finally {
+      setOpening(false)
+    }
+  }
+
   const [state, formAction, isPending] = useActionState(connectSpreadsheetAction, INITIAL)
   const fields = state.status === "error" ? state.fields : undefined
 
@@ -79,7 +142,7 @@ function ConnectForm({ accounts, onClose }: { accounts: ConnectableAccount[]; on
                 expire after about 7 days, so re-connecting is a normal step.
               </p>
               <div>
-                <PillLink href="/auth/google/connect" variant="solid" size="sm">
+                <PillLink href="/auth/google/connect" prefetch={false} variant="solid" size="sm">
                   Connect a Google account
                 </PillLink>
               </div>
@@ -89,7 +152,8 @@ function ConnectForm({ accounts, onClose }: { accounts: ConnectableAccount[]; on
               label="Google account"
               name="connectionId"
               required
-              defaultValue={accounts.length === 1 ? accounts[0].id : ""}
+              value={connectionId}
+              onChange={(event) => setConnectionId(event.target.value)}
               placeholder={accounts.length === 1 ? undefined : "Choose a connected account"}
               options={accounts.map((account) => ({
                 value: account.id,
@@ -108,14 +172,38 @@ function ConnectForm({ accounts, onClose }: { accounts: ConnectableAccount[]; on
             />
           )}
 
+          {accounts.length > 0 ? (
+            <PillLink href="/auth/google/connect?next=/spreadsheets" prefetch={false} variant="ghost" size="sm" className="w-fit">
+              + Add another Google account
+            </PillLink>
+          ) : null}
+
+          {PICKER_API_KEY && accounts.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <Button variant="line" loading={opening} disabled={connectionId === "" || isPending} onClick={() => void chooseFromDrive()}>
+                Choose from Google Drive
+              </Button>
+              {pickerError ? (
+                <div role="alert" className="flex flex-wrap items-center gap-3 text-[13px] text-paper">
+                  <span>⚠ {pickerError}</span>
+                  <PillLink href="/auth/google/connect?next=/spreadsheets" prefetch={false} variant="line" size="sm">
+                    Reconnect Google
+                  </PillLink>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           <TextField
             label="Spreadsheet URL or id"
             name="url"
             required
             spellCheck={false}
             autoComplete="off"
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
             placeholder="https://docs.google.com/spreadsheets/d/… or the id alone"
-            hint="Paste from a Google Sheets link (docs.google.com/spreadsheets/d/…) or a spreadsheet id."
+            hint={PICKER_API_KEY ? "Filled in when you choose from Drive, or paste a Sheets link yourself." : "Paste from a Google Sheets link (docs.google.com/spreadsheets/d/…) or a spreadsheet id."}
             error={fields?.url}
             disabled={isPending}
             className="font-mono text-[13px]"
@@ -131,7 +219,7 @@ function ConnectForm({ accounts, onClose }: { accounts: ConnectableAccount[]; on
               </p>
               {REAUTH_CODES.has(state.code) ? (
                 <div>
-                  <PillLink href="/auth/google/connect" variant="line" size="sm">
+                  <PillLink href="/auth/google/connect" prefetch={false} variant="line" size="sm">
                     Reconnect Google
                   </PillLink>
                 </div>

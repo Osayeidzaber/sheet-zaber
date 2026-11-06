@@ -4,6 +4,7 @@ import Link from "next/link"
 import { AnimatedCircularProgressBar } from "@/components/fx/progress-ring"
 import { SetupChecklist, type SetupStep } from "@/components/app/setup-checklist"
 import { ColumnChart } from "@/components/charts/column-chart"
+import { Breakdown } from "@/components/ui/breakdown"
 import { Badge, isHttpMethod, MethodTag, StatusCode, StatusDot } from "@/components/ui/badge"
 import { PillLink } from "@/components/ui/button"
 import { Panel, PanelBody, PanelHeader, PageHeader, Row, RowTitle } from "@/components/ui/panel"
@@ -23,7 +24,7 @@ import {
 import { listConnectionsAction } from "@/server/actions/connections"
 import { requireUser } from "@/server/auth/guards"
 import { listApis } from "@/server/apis/service"
-import { analyticsOverview, listRequestLogs } from "@/server/db/queries/logs"
+import { listRequestLogs, usageBreakdown } from "@/server/db/queries/logs"
 import { listSpreadsheets } from "@/server/db/queries/spreadsheets"
 import { listKeys } from "@/server/keys/service"
 
@@ -43,21 +44,46 @@ const RECENT_ROWS = 8
  * fails, the page says so instead of showing a number.
  */
 
-export default async function OverviewPage() {
+/** 24 hourly buckets ending now, with quiet hours as real zeros. */
+function lastDay(byHour: { hour: string; count: number }[], now: Date) {
+  const counts = new Map(byHour.map((row) => [row.hour, row.count]))
+  return Array.from({ length: 24 }, (_, index) => {
+    const at = new Date(now.getTime() - (23 - index) * 60 * 60 * 1000)
+    const key = at.toISOString().slice(0, 13)
+    return { label: `${key.slice(11)}:00`, value: counts.get(key) ?? 0 }
+  })
+}
+
+export default async function OverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const user = await requireUser()
+  const requestedApi = (await searchParams).api
 
   const to = new Date()
   const from = new Date(to.getTime() - WINDOW_DAYS * 24 * 60 * 60 * 1000)
 
-  const [connectionsResult, apisResult, keysResult, spreadsheets, analytics, logs] =
-    await Promise.all([
-      listConnectionsAction(),
-      listApis(user.id),
-      listKeys(user.id),
-      listSpreadsheets(user.id),
-      analyticsOverview(user.id, from, to),
-      listRequestLogs({ userId: user.id, page: 1, perPage: 50 }),
-    ])
+  const [connectionsResult, apisResult, keysResult, spreadsheets] = await Promise.all([
+    listConnectionsAction(),
+    listApis(user.id),
+    listKeys(user.id),
+    listSpreadsheets(user.id),
+  ])
+
+  // Honoured only for the caller's own endpoint; anything else shows all of them.
+  const ownApis = isActionError(apisResult) ? [] : apisResult.data
+  const selectedApi = ownApis.find((api) => api.id === requestedApi)
+  const apiFilter = selectedApi ? { apiId: selectedApi.id } : {}
+  const dayAgo = new Date(to.getTime() - 24 * 60 * 60 * 1000)
+  const [analytics, logs] = await Promise.all([
+    usageBreakdown({ userId: user.id, ...apiFilter }, from, to, dayAgo),
+    listRequestLogs({ userId: user.id, ...apiFilter, page: 1, perPage: 50 }),
+  ])
+  const hours = lastDay(analytics.byHour, to)
+  const thisHour = hours[23].value
+  const peak = hours.reduce((best, hour) => (hour.value > best.value ? hour : best), hours[0])
 
   const readErrors: { label: string; body: string; code: string }[] = []
   if (isActionError(connectionsResult)) {
@@ -208,10 +234,54 @@ export default async function OverviewPage() {
 
           <SetupChecklist steps={setupSteps} />
 
+          {ownApis.length > 1 ? (
+            <nav aria-label="Filter by endpoint" className="flex flex-wrap gap-2">
+              <PillLink href="/overview" variant={selectedApi ? "line" : "solid"} size="sm">
+                All endpoints
+              </PillLink>
+              {ownApis.map((api) => (
+                <PillLink key={api.id} href={`/overview?api=${api.id}`} variant={selectedApi?.id === api.id ? "solid" : "line"} size="sm">
+                  {api.name}
+                </PillLink>
+              ))}
+            </nav>
+          ) : null}
+
+          <Panel as="section">
+            <PanelHeader
+              title="Last 24 hours"
+              description={`${formatNumber(thisHour)} this hour${peak.value > 0 ? ` · busiest ${peak.label} UTC with ${formatNumber(peak.value)}` : ""}.`}
+            />
+            <PanelBody>
+              <ColumnChart label="Requests per hour, UTC" unitLabel="requests" height={160} formatValue={formatNumber} buckets={hours} />
+            </PanelBody>
+          </Panel>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Panel as="section">
+              <PanelHeader title="By endpoint" description={`All endpoints, last ${WINDOW_DAYS} days.`} />
+              <PanelBody>
+                <Breakdown rows={analytics.byApi} empty="No requests in this window." />
+              </PanelBody>
+            </Panel>
+            <Panel as="section">
+              <PanelHeader title="By API key" description="Who is calling." />
+              <PanelBody>
+                <Breakdown rows={analytics.byKey} empty="No requests in this window." />
+              </PanelBody>
+            </Panel>
+            <Panel as="section">
+              <PanelHeader title="From where" description="The calling site's hostname, when sent." />
+              <PanelBody>
+                <Breakdown rows={analytics.byOrigin} empty="No requests in this window." />
+              </PanelBody>
+            </Panel>
+          </div>
+
           <Panel as="section">
             <PanelHeader
               title="Requests over time"
-              description={`Day buckets from analyticsOverview, ${formatDay(from.toISOString())} – ${formatDay(to.toISOString())}.`}
+              description={`Daily totals, ${formatDay(from.toISOString())} – ${formatDay(to.toISOString())}.`}
             />
             <PanelBody>
               <div className="flex flex-col gap-8 lg:flex-row lg:items-start">

@@ -17,7 +17,8 @@ in the calling layer.
 | `email` | verified email for the `users.email` column | yes |
 | `profile` | display name + picture for `user_profiles` | yes |
 | `https://www.googleapis.com/auth/spreadsheets` | read/write the spreadsheets the user registers | yes |
-| `https://www.googleapis.com/auth/drive.readonly` | Picker/discovery UI (list files) | **no — deferred, §5** |
+| `https://www.googleapis.com/auth/drive.file` | Google Picker: only files the person chooses | yes, §5 |
+| `https://www.googleapis.com/auth/drive.readonly` | list every file | **no: restricted scope** |
 
 Consent request is `access_type=offline` + `prompt=consent` on the connect flow so a refresh
 token is guaranteed to be returned. The identity-only login does **not** ask for
@@ -124,31 +125,17 @@ Batches: v1 writes one record per request. A `POST` array >1 record is rejected 
 `400 validation_failed`; multi-row batch writes are a post-v1 extension and would need the same
 resolve→write race semantics documented first.
 
-## 5. Google Picker (deferred)
+## 5. Google Picker
 
-The user's ruling for v1 (2026-11-05): **paste URL/ID → backend verifies via
-`spreadsheets.get` → tab picker from the returned snapshot** with a header/row preview. The
-Google Picker widget is documented here as a deferred enhancement so adding it later does not
-require re-deciding anything.
+The Picker only prefills the spreadsheet id; the backend still verifies access with `spreadsheets.get`.
 
-The Picker is a browser widget, so it cannot be layered on without three changes that are each
-owned by a different party:
-
-1. **Scope** — `drive.readonly` must be added to §1, which changes the consent screen text and
-   re-prompts every existing user. Backend decision.
-2. **A live access token in the browser** — the Picker JS needs a short-lived token client-side.
-   That directly conflicts with §2 ("access_token never persisted, never in the browser") and
-   with the data-minimisation rule in `security.md` §4. It would require a new internal route
-   minting a *separate* Drive-only, 60-second token, returned to the browser and never stored.
-   Backend + security review.
-3. **CSP and frame relaxations** — `next.config.ts` currently ships `default-src 'self'`. The
-   Picker needs `script-src`/`frame-src` for `apis.google.com`, `connect-src` for
-   `www.googleapis.com`, and the `X-Frame-Options: DENY` header relaxed for the picker iframe.
-   Frontend + backend jointly; the header change lives in a backend-owned file.
-
-Until all three land, the paste flow stands and `docs/integration-status.md` carries the request.
-Nothing in the registration contract changes when the Picker arrives: it would only prefill the
-id that step 1 normalizes.
+- **Scope:** `drive.file`, not `drive.readonly`. Accounts connected earlier must reconnect to gain it.
+- **Browser token:** `pickerTokenAction` refreshes with `scope=drive.file`, so the token in the browser
+  cannot touch Sheets. It is never cached or stored, and there is no fallback to the broader token.
+- **Configuration:** enable the Picker API on the Cloud project and set `NEXT_PUBLIC_GOOGLE_PICKER_API_KEY`
+  to a browser key restricted by site and API. Without it the button is hidden and pasting still works.
+- **CSP:** `apis.google.com` scripts, Google frames and `www.googleapis.com` connections. `frame-ancestors`
+  and `X-Frame-Options` stay as they are, because they govern who may frame this app.
 
 ## 6. Frontend-visible surfaces
 

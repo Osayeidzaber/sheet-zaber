@@ -61,6 +61,8 @@ export type EngineCall = {
   bodyText: string | null
   /** Client IP (`x-forwarded-for`): a bucket dimension only, never logged or stored (§2 security.md). */
   ip: string | null
+  /** Hostname from the Origin or Referer header, kept in the log. Never a path or query. */
+  origin?: string | null
 }
 
 /**

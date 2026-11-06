@@ -213,13 +213,24 @@ export function ColumnChart({
               : allZero
                 ? "Every bucket is zero, so only the tracks are drawn."
                 : dense
-                  ? "Hover a column for its value; the full table below carries the same numbers."
+                  ? "Hover a column for its value, or open the numbers below."
                   : hasDomainMax
                     ? "Capsule height is the bucket value against the supplied axis maximum."
                     : "Capsule height is the bucket value against the largest bucket in this data.")}
       </figcaption>
 
-      {alternative ? <div className="szc-alt">{alternative}</div> : table}
+      {alternative ? (
+        <div className="szc-alt">{alternative}</div>
+      ) : dense ? (
+        <details>
+          <summary className="folio cursor-pointer py-2 transition-colors duration-(--dur-fast) hover:text-paper">
+            Show the numbers
+          </summary>
+          {table}
+        </details>
+      ) : (
+        table
+      )}
     </figure>
   )
 }

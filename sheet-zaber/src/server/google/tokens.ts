@@ -56,6 +56,40 @@ const defaultRefreshTransport: RefreshTransport = async (refreshToken) => {
   return { accessToken: refreshed.token, expiresAt: client.credentials.expiry_date ?? undefined }
 }
 
+export const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file"
+
+type TokenPost = (body: URLSearchParams) => Promise<{ ok: boolean; json(): Promise<unknown> }>
+
+const postToGoogle: TokenPost = (body) =>
+  fetch("https://oauth2.googleapis.com/token", { method: "POST", body })
+
+/**
+ * A token for the browser-side Picker, limited to `drive.file`, so it cannot read or write the
+ * person's sheets. Never cached or stored. Null means Google refused; the caller offers a reconnect
+ * and this does not mark the grant dead, because Sheets access may still be fine.
+ */
+export async function mintPickerToken(
+  connection: Pick<GoogleConnectionRow, "refreshTokenEnc">,
+  post: TokenPost = postToGoogle
+): Promise<string | null> {
+  try {
+    const response = await post(
+      new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: env.GOOGLE_CLIENT_ID ?? "",
+        client_secret: env.GOOGLE_CLIENT_SECRET ?? "",
+        refresh_token: decryptRefreshToken(connection.refreshTokenEnc),
+        scope: DRIVE_FILE_SCOPE,
+      })
+    )
+    if (!response.ok) return null
+    const body = (await response.json()) as { access_token?: unknown }
+    return typeof body.access_token === "string" ? body.access_token : null
+  } catch {
+    return null
+  }
+}
+
 /** §2: "never persisted — in-process cache keyed by connection id … ≤ 50 min used". */
 const ACCESS_TOKEN_MAX_LIFETIME_MS = 50 * 60 * 1000
 

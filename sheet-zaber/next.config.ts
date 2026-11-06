@@ -9,10 +9,12 @@ const isDev = process.env.NODE_ENV === "development"
  */
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  // apis.google.com and docs.google.com are for the Google Picker on the spreadsheets page.
+  `script-src 'self' 'unsafe-inline' https://apis.google.com${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://lh3.googleusercontent.com https:",
-  `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
+  `connect-src 'self' https://www.googleapis.com${isDev ? " ws: wss:" : ""}`,
+  "frame-src https://docs.google.com https://drive.google.com https://content.googleapis.com",
   "font-src 'self' data:",
   "frame-ancestors 'none'",
   "base-uri 'self'",

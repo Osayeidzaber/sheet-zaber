@@ -82,13 +82,13 @@ describe("buildAuthUrl", () => {
     expect(`${url.origin}${url.pathname}`).toBe("https://accounts.google.com/o/oauth2/v2/auth")
     const scopes = (url.searchParams.get("scope") ?? "").split(" ")
     expect(scopes).toEqual([...GOOGLE_OAUTH_SCOPES])
-    // drive.readonly is deferred (google-integration.md §5) and must never be requested.
-    expect(url.searchParams.get("scope")).not.toContain("drive")
+    // Only drive.file is requested, so nothing can browse a person's Drive.
+    expect(url.searchParams.get("scope")).not.toContain("drive.readonly")
   })
 
   it("requests offline+consent grants and the S256 PKCE challenge", () => {
     expect(url.searchParams.get("access_type")).toBe("offline")
-    expect(url.searchParams.get("prompt")).toBe("consent")
+    expect(url.searchParams.get("prompt")).toBe("select_account consent")
     expect(url.searchParams.get("include_granted_scopes")).toBe("true")
     expect(url.searchParams.get("response_type")).toBe("code")
     expect(url.searchParams.get("code_challenge")).toBe("ch-1")

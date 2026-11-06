@@ -51,14 +51,14 @@ export function Dialog({
         width
       )}
     >
-      <div className="flex items-start justify-between gap-4 border-b border-rule px-5 py-4">
+      <div className="relative border-b border-rule px-14 py-4 text-center">
         <div className="min-w-0">
           <h2 id={titleId} className="text-[18px] font-semibold tracking-[-0.02em]">
             {title}
           </h2>
           {description ? <p className="mt-1 text-[13px] text-dust">{description}</p> : null}
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close dialog" className="px-2">
+        <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close dialog" className="absolute top-3 right-3 px-2">
           ×
         </Button>
       </div>

@@ -313,6 +313,10 @@
   pointer-events: none;
 }
 
+.szc-columns {
+  margin-top: 14px;
+}
+
 .szc-y-tick {
   position: absolute;
   inset-inline-start: 0;

@@ -58,7 +58,7 @@ export function RefreshTabsButton({ spreadsheetId }: { spreadsheetId: string }) 
             <span className="font-mono text-[11px] tracking-[0.08em] text-dust uppercase">{feedback.code}</span>
           ) : null}
           {needsReconnect ? (
-            <PillLink href="/auth/google/connect" variant="line" size="sm">
+            <PillLink href="/auth/google/connect" prefetch={false} variant="line" size="sm">
               Reconnect Google
             </PillLink>
           ) : null}

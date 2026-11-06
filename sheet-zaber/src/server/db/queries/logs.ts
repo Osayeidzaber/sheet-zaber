@@ -5,7 +5,7 @@ import { and, asc, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm"
 import type { ErrorCategory } from "@/lib/action-result"
 
 import { db } from "../client"
-import { apiConfigurations, apiRequestLogs, users } from "../schema"
+import { apiConfigurations, apiKeys, apiRequestLogs, users } from "../schema"
 import { type DbLike, type DbTx, type Paged } from "./types"
 
 export type RequestLogRow = typeof apiRequestLogs.$inferSelect
@@ -237,6 +237,77 @@ export async function apiUsageForScope(
 }
 
 /** Retention sweep (`LOG_RETENTION_DAYS`); returns how many rows it deleted. */
+export type UsageBreakdown = AnalyticsOverview & {
+  /** `YYYY-MM-DDTHH` in UTC; hours with no requests are absent. */
+  byHour: { hour: string; count: number }[]
+  byApi: { apiId: string | null; label: string; count: number; failed: number }[]
+  byKey: { label: string; count: number; failed: number }[]
+  byOrigin: { label: string; count: number; failed: number }[]
+}
+
+/**
+ * One account's usage for the overview. `apiId` narrows everything except `byApi`, which always
+ * compares all of the account's endpoints. `hourFrom` bounds the hourly series.
+ */
+export async function usageBreakdown(
+  filter: { userId: string; apiId?: string },
+  from: Date,
+  to: Date,
+  hourFrom: Date,
+  q?: DbLike | DbTx
+): Promise<UsageBreakdown> {
+  const c = client(q)
+  const logs = apiRequestLogs
+  const window = (apiId?: string) => logWhere({ userId: filter.userId, apiId, from, to, page: 1, perPage: 1 })
+  const where = window(filter.apiId)
+  const count = sql<number>`count(*)::int`
+  const failed = sql<number>`(count(*) filter (where ${logs.statusCode} >= 400))::int`
+  const success = sql<number>`(count(*) filter (where ${logs.statusCode} < 400))::int`
+  const day = sql<string>`to_char(${logs.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`
+  const hour = sql<string>`to_char(${logs.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24')`
+  const apiLabel = sql<string>`coalesce(${logs.apiName}, 'Unknown endpoint')`
+  const keyLabel = sql<string>`coalesce(${apiKeys.name}, 'Dashboard or deleted key')`
+  const originLabel = sql<string>`coalesce(${logs.origin}, 'Server or direct call')`
+
+  const [[totals], byDay, byHour, byApi, byKey, byOrigin] = await Promise.all([
+    c.select({ requests: count, success, failed }).from(logs).where(where),
+    c.select({ day, count }).from(logs).where(where).groupBy(day).orderBy(asc(day)),
+    c
+      .select({ hour, count })
+      .from(logs)
+      .where(logWhere({ userId: filter.userId, apiId: filter.apiId, from: hourFrom, to, page: 1, perPage: 1 }))
+      .groupBy(hour)
+      .orderBy(asc(hour)),
+    c
+      .select({ apiId: logs.apiId, label: apiLabel, count, failed })
+      .from(logs)
+      .where(window())
+      .groupBy(logs.apiId, apiLabel)
+      .orderBy(desc(count))
+      .limit(8),
+    c
+      .select({ label: keyLabel, count, failed })
+      .from(logs)
+      .leftJoin(apiKeys, eq(logs.apiKeyId, apiKeys.id))
+      .where(where)
+      .groupBy(keyLabel)
+      .orderBy(desc(count))
+      .limit(8),
+    c.select({ label: originLabel, count, failed }).from(logs).where(where).groupBy(originLabel).orderBy(desc(count)).limit(8),
+  ])
+
+  return {
+    requests: totals?.requests ?? 0,
+    success: totals?.success ?? 0,
+    failed: totals?.failed ?? 0,
+    byDay,
+    byHour,
+    byApi,
+    byKey,
+    byOrigin,
+  }
+}
+
 export async function pruneOldLogs(retentionDays: number, q?: DbLike | DbTx): Promise<number> {
   const deleted = await client(q)
     .delete(apiRequestLogs)

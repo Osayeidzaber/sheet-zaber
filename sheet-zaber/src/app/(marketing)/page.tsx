@@ -497,7 +497,8 @@ export default function LandingPage() {
                       <code className="inline">sub</code>, never on a typed email
 . The consent request asks for{" "}
                       <code className="inline">openid email profile</code> plus the Sheets read/write
-                      scope — no Drive scope, because the Picker is deferred.
+                      scope and <code className="inline">drive.file</code>, which covers only files you
+                      choose in Google&apos;s Picker.
                     </span>,
                   ],
                 },

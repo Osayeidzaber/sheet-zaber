@@ -188,7 +188,7 @@ function ConnectionRow({
           {row.status === "reauth_required" ? (
             // Re-consent, not "connect": the row already exists, and `/auth/google/connect` is the
             // entry whose state re-attaches a grant to the session user (google-integration.md §6).
-            <PillLink href="/auth/google/connect" variant="line" size="sm">
+            <PillLink href="/auth/google/connect" prefetch={false} variant="line" size="sm">
               Re-consent
             </PillLink>
           ) : null}

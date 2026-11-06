@@ -7,6 +7,7 @@ import { isActionError } from "@/lib/action-result"
 import { formatDateTime, formatDay, formatNumber, meta, shortId } from "@/lib/format"
 import { requireUser } from "@/server/auth/guards"
 import { listApis } from "@/server/apis/service"
+import { listSpreadsheets } from "@/server/db/queries/spreadsheets"
 import { listKeys, type ApiKeyMeta } from "@/server/keys/service"
 import { CreateKeyForm } from "./create-key-form"
 import { KeysTable, type KeyRowView } from "./keys-table"
@@ -88,6 +89,7 @@ function toRowView(key: ApiKeyMeta, nameById: Map<string, string>, now: Date): K
 
 export default async function KeysPage() {
   const user = await requireUser()
+  const sheetTitles = new Map((await listSpreadsheets(user.id)).map((sheet) => [sheet.id, sheet.title || "Untitled spreadsheet"]))
   const now = new Date()
 
   const [keysResult, apisResult] = await Promise.all([listKeys(user.id), listApis(user.id)])
@@ -183,6 +185,7 @@ export default async function KeysPage() {
           endpoints={apis.map((api) => ({
             id: api.id,
             name: api.name,
+            sheetTitle: sheetTitles.get(api.spreadsheetId) ?? "Removed spreadsheet",
             tabTitle: api.tabTitle,
             enabled: api.enabled,
           }))}

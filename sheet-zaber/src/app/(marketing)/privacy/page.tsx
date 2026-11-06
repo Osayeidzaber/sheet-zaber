@@ -150,10 +150,10 @@ const SECTIONS: LegalSection[] = [
           </Para>
         </div>
         <Para>
-          Consent asks for four scopes: <code className="inline">openid</code>, <code className="inline">email</code>, <code className="inline">profile</code> and{" "}
-          <code className="inline">.../auth/spreadsheets</code>. All four are requested on every consent redirect, sign-in included: the app
+          Consent asks for five scopes: <code className="inline">openid</code>, <code className="inline">email</code>, <code className="inline">profile</code>,{" "}
+          <code className="inline">.../auth/spreadsheets</code> and <code className="inline">.../auth/drive.file</code>. All five are requested on every consent redirect, sign-in included: the app
           asks for spreadsheet access when it connects your account, because reading and writing your sheets is
-          the product. It does not ask for Drive access, and no code path can list your files.
+          the product. The Drive scope only covers files you choose in Google&apos;s Picker, so the app cannot list or read the rest of your Drive.
         </Para>
         <Para>
           Consent uses <code className="inline">access_type=offline</code> + <code className="inline">prompt=consent</code>, so Google returns a refresh token — that is
@@ -249,9 +249,9 @@ const SECTIONS: LegalSection[] = [
         <Para>
           Never logged, because no column exists for them: request or response bodies, headers, cookies, API
           keys, Google tokens, cell values. <Em>No IP address is stored anywhere</Em> — the client IP is used only as
-          a one-way hashed component of a transient rate-limit counter. An &quot;origin host&quot; column exists in the
-          schema, but the service leaves it empty, so no caller origin
-          is recorded.
+          a one-way hashed component of a transient rate-limit counter. The log also keeps the hostname from a
+          request&apos;s Origin or Referer header when one is sent, never its path or query, and the account
+          owner can see it in their usage figures.
         </Para>
         <Para>
           Administrative actions (disable, re-enable, role change, invitation create/revoke, key revocation,

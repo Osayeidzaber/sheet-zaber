@@ -1,0 +1,31 @@
+# Daily retention sweep for Sheet Zaber. Replaces the Render cron job on free hosting.
+# Needs the repository secrets DATABASE_URL and DATABASE_CA_CERT. See sheet-zaber/docs/deployment-vercel.md.
+name: Prune logs
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: sheet-zaber
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile --prod=false
+      - run: pnpm db:prune
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
+          LOG_RETENTION_DAYS: "90"

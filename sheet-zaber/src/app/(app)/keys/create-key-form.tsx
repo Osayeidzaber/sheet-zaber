@@ -27,6 +27,7 @@ const INITIAL_FIELDS: KeyActionFields = {}
 export type EndpointOption = {
   id: string
   name: string
+  sheetTitle: string
   tabTitle: string
   enabled: boolean
 }
@@ -65,9 +66,14 @@ function CreateKeySession({
   const [write, setWrite] = useState(false)
   const [restricted, setRestricted] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
+  const [expiry, setExpiry] = useState("")
+  const [today] = useState(() => Date.now())
+  const sheets = [...new Set(endpoints.map((api) => api.sheetTitle))]
 
   const error = state.status === "error" ? state : null
   const fields = error?.fields ?? INITIAL_FIELDS
+
+  const presetDate = (days: number) => new Date(today + days * 86_400_000).toISOString().slice(0, 10)
 
   const selectedCount = selected.filter((id) => endpoints.some((api) => api.id === id)).length
 
@@ -119,11 +125,11 @@ function CreateKeySession({
 
           <div className="flex flex-col gap-3 border-t border-rule pt-5">
             <Toggle
-              label="Restrict this key to selected endpoints"
+              label="Limit this key to specific sheets"
               checked={restricted}
               onChange={setRestricted}
               disabled={isPending}
-              hint="Off: the key may call every endpoint you own. On: it may call only the ones checked below — anything else gets 403 key_restricted."
+              hint="Off: the key can call every endpoint you own. On: only what you tick below. Anything else gets 403 key_restricted. Ticking a sheet covers its endpoints today, not ones you add later."
             />
 
             <input type="hidden" name="restricted" value={restricted ? "yes" : "no"} readOnly />
@@ -137,21 +143,39 @@ function CreateKeySession({
               ) : (
                 <fieldset className="flex flex-col gap-1" disabled={isPending}>
                   <legend className="sr-only">Allowed endpoints</legend>
-                  {endpoints.map((api) => (
-                    <CheckRow
-                      key={api.id}
-                      label={api.name}
-                      description={api.enabled ? api.tabTitle : `${api.tabTitle} · endpoint disabled`}
-                      checked={selected.includes(api.id)}
-                      onChange={(checked) =>
-                        setSelected((current) =>
-                          checked
-                            ? [...current, api.id]
-                            : current.filter((id) => id !== api.id)
-                        )
-                      }
-                    />
-                  ))}
+                  {sheets.map((sheet) => {
+                    const members = endpoints.filter((api) => api.sheetTitle === sheet)
+                    const ids = members.map((api) => api.id)
+                    return (
+                      <div key={sheet} className="flex flex-col gap-1 border-b border-rule pb-3 last:border-b-0">
+                        <CheckRow
+                          label={sheet}
+                          description={`Whole sheet · ${members.length} ${members.length === 1 ? "endpoint" : "endpoints"}`}
+                          checked={ids.every((id) => selected.includes(id))}
+                          onChange={(checked) =>
+                            setSelected((current) =>
+                              checked ? [...new Set([...current, ...ids])] : current.filter((id) => !ids.includes(id))
+                            )
+                          }
+                        />
+                        <div className="ml-6 flex flex-col gap-1 border-l border-rule pl-3">
+                          {members.map((api) => (
+                            <CheckRow
+                              key={api.id}
+                              label={api.name}
+                              description={api.enabled ? api.tabTitle : `${api.tabTitle} · endpoint disabled`}
+                              checked={selected.includes(api.id)}
+                              onChange={(checked) =>
+                                setSelected((current) =>
+                                  checked ? [...current, api.id] : current.filter((id) => id !== api.id)
+                                )
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
                   {/* Only the ids still checked are submitted, so an unticked row cannot appear in
                       `allowedApiIds` as an empty string. */}
                   {selected
@@ -177,15 +201,29 @@ function CreateKeySession({
             ) : null}
           </div>
 
-          <div className="border-t border-rule pt-5">
+          <div className="flex flex-col gap-3 border-t border-rule pt-5">
             <TextField
               label="Expiry date (optional)"
               name="expiresAt"
               type="date"
+              value={expiry}
+              min={presetDate(1)}
+              onChange={(event) => setExpiry(event.target.value)}
+              onClick={(event) => event.currentTarget.showPicker?.()}
               hint="Leave empty for a key that never expires. A dated key stops authenticating the moment it lapses; the list labels it instead of hiding it."
               error={fieldError(fields, "expiresAt")}
               disabled={isPending}
             />
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant={expiry === "" ? "solid" : "line"} onClick={() => setExpiry("")}>
+                Never
+              </Button>
+              {[30, 90, 365].map((days) => (
+                <Button key={days} size="sm" variant={expiry === presetDate(days) ? "solid" : "line"} onClick={() => setExpiry(presetDate(days))}>
+                  {days === 365 ? "1 year" : `${days} days`}
+                </Button>
+              ))}
+            </div>
           </div>
 
           {error ? (

@@ -141,7 +141,7 @@ export default async function SettingsPage() {
           title="Google connections"
           description="Each row is one encrypted Google grant stored against your account — GET /api/internal/connections, status included. Tokens, their ciphertext and the owning user id are never sent to the browser."
           action={
-            <PillLink href="/auth/google/connect" variant="solid" size="sm">
+            <PillLink href="/auth/google/connect" prefetch={false} variant="solid" size="sm">
               Connect a Google account
             </PillLink>
           }
@@ -153,7 +153,7 @@ export default async function SettingsPage() {
             title="No Google account connected"
             body="This is a real state, not an error: your Sheet Zaber account works, but with no stored Google grant nothing can be registered, and every spreadsheet read or write your endpoints perform goes through one of these connections. Connect an account — the paste flow on /spreadsheets needs one before it can verify access."
             action={
-              <PillLink href="/auth/google/connect" variant="solid" size="md">
+              <PillLink href="/auth/google/connect" prefetch={false} variant="solid" size="md">
                 Connect a Google account
               </PillLink>
             }

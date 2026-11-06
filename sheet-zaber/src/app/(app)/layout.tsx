@@ -41,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         Skip to content
       </a>
 
-      <div className="mx-auto flex min-h-screen w-full max-w-[1720px]">
+      <div className="flex min-h-screen w-full">
         <SidebarShell>
           <div className="px-2">
             <Wordmark href="/overview" />

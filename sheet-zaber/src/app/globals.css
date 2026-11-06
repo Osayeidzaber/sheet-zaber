@@ -232,6 +232,13 @@
   .field::placeholder {
     color: #7d7d7d;
   }
+  .field::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(1);
+  }
+  .field[type="date"] {
+    cursor: pointer;
+  }
   .field:focus-visible {
     border-color: var(--paper);
     outline: none;
