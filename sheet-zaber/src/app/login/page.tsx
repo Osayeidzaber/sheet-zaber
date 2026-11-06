@@ -93,11 +93,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <Folio aside="Invitation only">00 — The door</Folio>
           <h1 className="display text-[clamp(64px,11vw,176px)] text-paper">
             <span className="hero-line">
-              <span className="hero-rise">Sign</span>
-            </span>
-            <span className="hero-line">
-              <span className="hero-rise [--d:120ms]">
-                <TitleAside>in.</TitleAside>
+              <span className="hero-rise whitespace-nowrap">
+                Sign <TitleAside>in.</TitleAside>
               </span>
             </span>
           </h1>
@@ -174,21 +171,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         )}
 
         <footer className="text-center">
-          <ol className="mb-6 grid gap-px border-y border-rule bg-rule text-left">
-            {[
-              ["01", "Sign in with Google", "Sheet Zaber never sees your password."],
-              ["02", "Pick a username", "New here? Enter it with your invitation code."],
-              ["03", "Publish a tab", "Choose the columns, then call your endpoint."],
-            ].map(([index, title, body]) => (
-              <li key={index} className="flex gap-4 bg-ink py-3">
-                <span className="folio num pt-0.5">{index}</span>
-                <span>
-                  <span className="block text-[14px] font-semibold">{title}</span>
-                  <span className="block text-[13px] text-dust">{body}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
           <p className="folio">Invitation-only · Google sign-in · No passwords stored</p>
         </footer>
       </div>
